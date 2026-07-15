@@ -1,0 +1,722 @@
+<!-- ============================================================
+     THROWAWAY PROTOTYPE — wayfinder ticket #5 "Prototype the UI layout"
+     Question: how are Apps / Background / Services navigated, where do
+     the CPU & memory graphs live, what do the columns look like, and
+     where does kill-process sit?
+     Three structurally different variants, switch with ?variant=A|B|C
+     or the floating bar / arrow keys. Stack-agnostic HTML/CSS; the real
+     app is WinUI 3 (ADR-0001). NOT production code.
+     ============================================================ -->
+<style>
+  :root {
+    /* Fluent light (Mica-ish warm neutral) */
+    --mica: #f3f3f3;
+    --layer: rgba(255, 255, 255, 0.7);
+    --layer-solid: #fbfbfb;
+    --card: rgba(255, 255, 255, 0.6);
+    --stroke: rgba(0, 0, 0, 0.06);
+    --stroke-strong: rgba(0, 0, 0, 0.12);
+    --divider: rgba(0, 0, 0, 0.055);
+    --text: #1b1b1b;
+    --text-2: #5c5c5c;
+    --text-3: #8a8a8a;
+    --accent: #005fb8;
+    --accent-fill: #0067c0;
+    --accent-soft: rgba(0, 95, 184, 0.09);
+    --cpu: #0a7bd4;
+    --cpu-2: rgba(10, 123, 212, 0.16);
+    --mem: #8b5cf6;
+    --mem-2: rgba(139, 92, 246, 0.16);
+    --danger: #c42b1c;
+    --danger-soft: rgba(196, 43, 28, 0.09);
+    --hover: rgba(0, 0, 0, 0.037);
+    --sel: rgba(0, 95, 184, 0.10);
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.09), 0 0 1px rgba(0, 0, 0, 0.14);
+    --radius: 8px;
+    --radius-lg: 10px;
+    --font: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --mica: #202020;
+      --layer: rgba(255, 255, 255, 0.045);
+      --layer-solid: #2b2b2b;
+      --card: rgba(255, 255, 255, 0.038);
+      --stroke: rgba(255, 255, 255, 0.07);
+      --stroke-strong: rgba(255, 255, 255, 0.10);
+      --divider: rgba(255, 255, 255, 0.06);
+      --text: #ffffff;
+      --text-2: #cfcfcf;
+      --text-3: #969696;
+      --accent: #60cdff;
+      --accent-fill: #4cc2ff;
+      --accent-soft: rgba(96, 205, 255, 0.10);
+      --cpu: #4cc2ff;
+      --cpu-2: rgba(76, 194, 255, 0.16);
+      --mem: #c39bff;
+      --mem-2: rgba(195, 155, 255, 0.16);
+      --danger: #ff99a4;
+      --danger-soft: rgba(255, 153, 164, 0.11);
+      --hover: rgba(255, 255, 255, 0.05);
+      --sel: rgba(96, 205, 255, 0.12);
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.6);
+    }
+  }
+  /* viewer toggle overrides */
+  :root[data-theme="light"] {
+    --mica: #f3f3f3; --layer: rgba(255,255,255,0.7); --layer-solid: #fbfbfb;
+    --card: rgba(255,255,255,0.6); --stroke: rgba(0,0,0,0.06); --stroke-strong: rgba(0,0,0,0.12);
+    --divider: rgba(0,0,0,0.055); --text: #1b1b1b; --text-2: #5c5c5c; --text-3: #8a8a8a;
+    --accent: #005fb8; --accent-fill: #0067c0; --accent-soft: rgba(0,95,184,0.09);
+    --cpu: #0a7bd4; --cpu-2: rgba(10,123,212,0.16); --mem: #8b5cf6; --mem-2: rgba(139,92,246,0.16);
+    --danger: #c42b1c; --danger-soft: rgba(196,43,28,0.09);
+    --hover: rgba(0,0,0,0.037); --sel: rgba(0,95,184,0.10);
+    --shadow: 0 2px 8px rgba(0,0,0,0.09), 0 0 1px rgba(0,0,0,0.14);
+  }
+  :root[data-theme="dark"] {
+    --mica: #202020; --layer: rgba(255,255,255,0.045); --layer-solid: #2b2b2b;
+    --card: rgba(255,255,255,0.038); --stroke: rgba(255,255,255,0.07); --stroke-strong: rgba(255,255,255,0.10);
+    --divider: rgba(255,255,255,0.06); --text: #ffffff; --text-2: #cfcfcf; --text-3: #969696;
+    --accent: #60cdff; --accent-fill: #4cc2ff; --accent-soft: rgba(96,205,255,0.10);
+    --cpu: #4cc2ff; --cpu-2: rgba(76,194,255,0.16); --mem: #c39bff; --mem-2: rgba(195,155,255,0.16);
+    --danger: #ff99a4; --danger-soft: rgba(255,153,164,0.11);
+    --hover: rgba(255,255,255,0.05); --sel: rgba(96,205,255,0.12);
+    --shadow: 0 2px 10px rgba(0,0,0,0.4), 0 0 1px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 12% -8%, var(--accent-soft), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, var(--mem-2), transparent 55%),
+      var(--mica);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding: 22px;
+  }
+
+  /* ---- window shell ---- */
+  .win {
+    max-width: 1080px;
+    margin: 0 auto;
+    height: 720px;
+    background: var(--layer-solid);
+    border: 1px solid var(--stroke-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .titlebar {
+    height: 40px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 6px 0 14px;
+    background: var(--layer);
+    border-bottom: 1px solid var(--divider);
+    -webkit-backdrop-filter: saturate(1.4) blur(20px);
+    backdrop-filter: saturate(1.4) blur(20px);
+  }
+  .titlebar .tb-icon {
+    width: 16px; height: 16px; border-radius: 4px;
+    background: linear-gradient(135deg, var(--accent-fill), var(--mem));
+  }
+  .titlebar .tb-title { font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: .01em; }
+  .titlebar .tb-spacer { flex: 1; }
+  .caption-btn { width: 38px; height: 30px; display: grid; place-items: center; border-radius: 5px; color: var(--text-2); }
+  .caption-btn:hover { background: var(--hover); }
+  .caption-btn.close:hover { background: #c42b1c; color: #fff; }
+  .caption-btn svg { width: 10px; height: 10px; }
+
+  .body { flex: 1; min-height: 0; display: flex; }
+
+  /* ---- shared list styling ---- */
+  .plist { display: flex; flex-direction: column; min-height: 0; }
+  .col-head {
+    display: grid; align-items: center;
+    padding: 8px 16px 8px 16px;
+    font-size: 11.5px; font-weight: 600; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: .04em;
+    border-bottom: 1px solid var(--divider);
+    position: sticky; top: 0;
+    background: var(--layer-solid);
+    z-index: 2;
+  }
+  .rows { overflow-y: auto; flex: 1; min-height: 0; }
+  .row {
+    display: grid; align-items: center;
+    padding: 0 16px; height: 40px;
+    border-radius: 6px; margin: 1px 6px;
+    cursor: default; position: relative;
+  }
+  .row:hover { background: var(--hover); }
+  .row.sel { background: var(--sel); box-shadow: inset 2.5px 0 0 var(--accent) ; }
+  .cell { font-size: 13px; font-variant-numeric: tabular-nums; }
+  .cell.num { text-align: right; color: var(--text-2); }
+  .name { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .name .lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 450; }
+  .ico {
+    width: 22px; height: 22px; border-radius: 5px; flex: none;
+    display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff;
+  }
+  .ico.svc { background: transparent; color: var(--text-3); border: 1.4px solid var(--stroke-strong); border-radius: 6px; font-weight: 600; }
+  .ico.bg { background: transparent; color: var(--text-3); }
+  .ico.bg svg, .ico.svc svg { width: 15px; height: 15px; }
+  /* usage heat text */
+  .heat-1 { color: var(--text-2); }
+  .heat-2 { color: var(--text); font-weight: 600; }
+  .heat-3 { color: var(--danger); font-weight: 600; }
+  .pill {
+    font-size: 11px; padding: 1px 8px; border-radius: 20px; font-weight: 600;
+    border: 1px solid var(--stroke-strong); color: var(--text-2);
+  }
+  .pill.run { color: #0f7b0f; border-color: rgba(15,123,15,.3); background: rgba(15,123,15,.08); }
+  .pill.stop { color: var(--text-3); }
+  @media (prefers-color-scheme: dark) { .pill.run { color: #6ccb6c; border-color: rgba(108,203,108,.3); background: rgba(108,203,108,.1);} }
+  :root[data-theme="dark"] .pill.run { color: #6ccb6c; border-color: rgba(108,203,108,.3); background: rgba(108,203,108,.1); }
+
+  .chev { width: 14px; height: 14px; color: var(--text-3); flex: none; transition: transform .15s; }
+
+  /* ---- graph card ---- */
+  .graph {
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius);
+    padding: 12px 14px 8px;
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .graph .g-top { display: flex; align-items: baseline; gap: 8px; }
+  .graph .g-name { font-size: 12px; font-weight: 600; color: var(--text-2); }
+  .graph .g-val { font-size: 20px; font-weight: 650; margin-left: auto; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .graph .g-sub { font-size: 11px; color: var(--text-3); }
+  .graph canvas { width: 100%; display: block; margin-top: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+  /* ---- buttons ---- */
+  .btn {
+    font-family: var(--font); font-size: 13px; font-weight: 550;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 13px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--stroke-strong); background: var(--layer); color: var(--text);
+  }
+  .btn:hover { background: var(--hover); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn.danger { color: #fff; background: var(--danger); border-color: transparent; }
+  .btn.danger:hover { filter: brightness(1.08); }
+  .btn.danger[disabled] { background: var(--stroke-strong); color: var(--text-3); cursor: not-allowed; }
+  .btn.accent { color: #fff; background: var(--accent-fill); border-color: transparent; }
+
+  .toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--divider); }
+  .search {
+    flex: 1; max-width: 260px; display: flex; align-items: center; gap: 8px;
+    padding: 6px 11px; border-radius: 6px; border: 1px solid var(--stroke-strong); background: var(--layer);
+    color: var(--text-3); font-size: 13px;
+  }
+  .h1 { font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+  .muted { color: var(--text-3); font-size: 12px; }
+
+  /* =========== VARIANT A : rail + top graph strip =========== */
+  .A-rail {
+    width: 220px; flex: none; padding: 8px; display: flex; flex-direction: column; gap: 2px;
+    border-right: 1px solid var(--divider); background: var(--layer);
+  }
+  .navitem {
+    display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px;
+    border-radius: 6px; cursor: pointer; color: var(--text); font-size: 13.5px; position: relative;
+  }
+  .navitem:hover { background: var(--hover); }
+  .navitem.on { background: var(--accent-soft); font-weight: 600; }
+  .navitem.on::before { content:""; position:absolute; left:2px; top:9px; bottom:9px; width:3px; border-radius:3px; background: var(--accent); }
+  .navitem svg { width: 18px; height: 18px; color: var(--text-2); }
+  .navitem .count { margin-left: auto; font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .A-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .A-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 16px 4px; }
+  .A-listwrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+  /* =========== VARIANT B : top tabs + right graph dock =========== */
+  .B-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .pivot { display: flex; gap: 4px; padding: 12px 16px 0; border-bottom: 1px solid var(--divider); }
+  .tab { position: relative; padding: 8px 6px 12px; margin: 0 8px; font-size: 14px; color: var(--text-2); cursor: pointer; font-weight: 500; }
+  .tab.on { color: var(--text); font-weight: 650; }
+  .tab.on::after { content:""; position:absolute; left:0; right:0; bottom:0; height:2.5px; border-radius:3px; background: var(--accent); }
+  .tab .c { font-size: 11.5px; color: var(--text-3); margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .B-dock {
+    width: 268px; flex: none; border-left: 1px solid var(--divider); background: var(--layer);
+    display: flex; flex-direction: column; gap: 12px; padding: 14px;
+    min-height: 0;
+  }
+  .detail {
+    margin-top: auto; border-top: 1px solid var(--divider); padding-top: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .detail .dt-name { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 13.5px; }
+  .detail .dt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; font-size: 12px; }
+  .detail .dt-grid .k { color: var(--text-3); }
+  .detail .dt-grid .v { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* =========== VARIANT C : grouped list + bottom bar =========== */
+  .C-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .grouphead {
+    display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 34px;
+    cursor: pointer; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--text-2); background: var(--layer); position: sticky; top: 0; z-index: 1;
+    border-bottom: 1px solid var(--divider); border-top: 1px solid var(--divider);
+  }
+  .grouphead .g-count { color: var(--text-3); font-weight: 600; }
+  .grouphead .g-agg { margin-left: auto; display: flex; gap: 26px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; letter-spacing: 0; text-transform: none; }
+  .row .kill-inline {
+    position: absolute; right: 10px; opacity: 0; pointer-events: none;
+    font-size: 11.5px; font-weight: 600; color: #fff; background: var(--danger);
+    padding: 3px 10px; border-radius: 5px; border: none; cursor: pointer;
+  }
+  .row:hover .kill-inline { opacity: 1; pointer-events: auto; }
+  .C-bottom {
+    flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    border-top: 1px solid var(--stroke-strong); background: var(--divider);
+  }
+  .C-meter { background: var(--layer); padding: 12px 18px; display: flex; align-items: center; gap: 16px; }
+  .C-meter .m-txt { display: flex; flex-direction: column; }
+  .C-meter .m-lbl { font-size: 11.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+  .C-meter .m-val { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .C-meter canvas { flex: 1; height: 44px; }
+
+  /* ---- context menu ---- */
+  .ctx {
+    position: fixed; z-index: 50; min-width: 190px; padding: 5px;
+    background: var(--layer-solid); border: 1px solid var(--stroke-strong);
+    border-radius: 8px; box-shadow: var(--shadow); display: none;
+    -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px);
+  }
+  .ctx button {
+    display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+    padding: 8px 10px; border: none; background: none; border-radius: 5px;
+    font-family: var(--font); font-size: 13px; color: var(--text); cursor: pointer;
+  }
+  .ctx button:hover { background: var(--hover); }
+  .ctx button.danger { color: var(--danger); }
+  .ctx svg { width: 15px; height: 15px; }
+  .ctx hr { border: none; border-top: 1px solid var(--divider); margin: 4px 2px; }
+
+  /* ---- toast ---- */
+  .toast {
+    position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--layer-solid); border: 1px solid var(--stroke-strong); box-shadow: var(--shadow);
+    padding: 11px 16px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; z-index: 60; display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---- floating variant switcher ---- */
+  .switcher {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 4px; z-index: 100;
+    background: rgba(20,20,22,0.92); color: #fff; border-radius: 999px; padding: 5px 6px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    font-family: var(--font);
+  }
+  .switcher button { background: none; border: none; color: #fff; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+  .switcher button:hover { background: rgba(255,255,255,0.14); }
+  .switcher .lbl { padding: 0 12px; font-size: 13px; font-weight: 600; min-width: 168px; text-align: center; }
+  .switcher .lbl b { opacity: .55; font-weight: 600; margin-right: 6px; }
+  .switcher svg { width: 16px; height: 16px; }
+
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="win">
+  <div class="titlebar">
+    <div class="tb-icon"></div>
+    <div class="tb-title">Task Manager</div>
+    <div class="tb-spacer"></div>
+    <div class="caption-btn"><svg viewBox="0 0 10 10"><line x1="1" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="caption-btn"><svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1"/></svg></div>
+    <div class="caption-btn close"><svg viewBox="0 0 10 10"><line x1="1.5" y1="1.5" x2="8.5" y2="8.5" stroke="currentColor" stroke-width="1"/><line x1="8.5" y1="1.5" x2="1.5" y2="8.5" stroke="currentColor" stroke-width="1"/></svg></div>
+  </div>
+
+  <!-- variant containers get filled by JS -->
+  <div class="body" id="stage"></div>
+</div>
+
+<div class="ctx" id="ctx"></div>
+<div class="toast" id="toast"></div>
+
+<div class="switcher" role="group" aria-label="Prototype variant switcher">
+  <button id="prev" aria-label="Previous variant"><svg viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div class="lbl" id="swlbl"><b>A</b> Rail + top graphs</div>
+  <button id="next" aria-label="Next variant"><svg viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- icons ----------
+  var I = {
+    apps: '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>',
+    bg: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.5-6.5l-2 2m-7 7l-2 2m0-11l2 2m7 7l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.5"/></svg>',
+    svc: '<svg viewBox="0 0 24 24" fill="none"><path d="M11 3.5a1.5 1.5 0 013 0v.7a7.6 7.6 0 011.8.75l.5-.5a1.5 1.5 0 012.1 2.1l-.5.5c.32.56.57 1.16.75 1.8h.7a1.5 1.5 0 010 3h-.7c-.18.64-.43 1.24-.75 1.8l.5.5a1.5 1.5 0 01-2.1 2.1l-.5-.5c-.56.32-1.16.57-1.8.75v.7a1.5 1.5 0 01-3 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12.5" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/></svg>',
+    kill: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    detail: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5M12 8h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    file: '<svg viewBox="0 0 24 24" fill="none"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z" stroke="currentColor" stroke-width="1.6"/><path d="M14 3v5h5" stroke="currentColor" stroke-width="1.6"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    chev: '<svg viewBox="0 0 24 24" fill="none" class="chev"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+
+  // ---------- mock data ----------
+  function P(name, mono, tint, type, cpu, mem, extra) {
+    return Object.assign({ name: name, mono: mono, tint: tint, type: type, cpu: cpu, mem: mem }, extra || {});
+  }
+  var TINT = { blue:"#2f81f7", green:"#2da44e", orange:"#e8730c", purple:"#8250df", red:"#cf222e", teal:"#0b8f8f", slate:"#57606a", pink:"#bf3989" };
+  var APPS = [
+    P("Google Chrome","C",TINT.blue,"app",12.4,1840,{windows:["Gmail — Inbox","task-manager · GitHub","+ 6 more tabs"]}),
+    P("Visual Studio Code","VS",TINT.blue,"app",6.1,912,{windows:["index.html — task-manager"]}),
+    P("Spotify","S",TINT.green,"app",1.8,388,{}),
+    P("Microsoft Word","W",TINT.blue,"app",0.4,276,{windows:["spec-v1.docx"]}),
+    P("Windows Terminal","T",TINT.slate,"app",2.2,141,{}),
+    P("Photos","P",TINT.orange,"app",0.0,88,{})
+  ];
+  var BG = [
+    P("Antimalware Service Executable","",0,"bg",8.7,286),
+    P("Windows Explorer","",0,"bg",1.1,204),
+    P("Desktop Window Manager","",0,"bg",3.4,168),
+    P("Runtime Broker","",0,"bg",0.2,42),
+    P("Service Host: Network Service","",0,"bg",0.6,66),
+    P("NVIDIA Container","",0,"bg",0.3,120),
+    P("Search Indexer","",0,"bg",4.2,98),
+    P("Print Spooler","",0,"bg",0.0,18),
+    P("Cortana","",0,"bg",0.0,54),
+    P("Steam Client Bootstrapper","",0,"bg",0.1,74)
+  ];
+  var SVC = [
+    P("wuauserv","",0,"svc",0,0,{disp:"Windows Update",state:"Running"}),
+    P("Spooler","",0,"svc",0,0,{disp:"Print Spooler",state:"Running"}),
+    P("Dhcp","",0,"svc",0,0,{disp:"DHCP Client",state:"Running"}),
+    P("WSearch","",0,"svc",0,0,{disp:"Windows Search",state:"Running"}),
+    P("MSSQL$SQLEXPRESS","",0,"svc",0,0,{disp:"SQL Server (SQLEXPRESS)",state:"Stopped"}),
+    P("Themes","",0,"svc",0,0,{disp:"Themes",state:"Running"}),
+    P("W32Time","",0,"svc",0,0,{disp:"Windows Time",state:"Stopped"}),
+    P("BITS","",0,"svc",0,0,{disp:"Background Intelligent Transfer",state:"Running"})
+  ];
+  var VIEWS = { apps:{label:"Apps", data:APPS}, background:{label:"Background processes", data:BG}, services:{label:"Services", data:SVC} };
+
+  function heat(cpu){ return cpu >= 8 ? "heat-3" : cpu >= 3 ? "heat-2" : "heat-1"; }
+  function memHeat(mem){ return mem >= 800 ? "heat-3" : mem >= 300 ? "heat-2" : "heat-1"; }
+  function fmtMem(mb){ return mb >= 1024 ? (mb/1024).toFixed(1)+" GB" : Math.round(mb)+" MB"; }
+  function icoFor(p){
+    if (p.type === "app") return '<span class="ico" style="background:'+p.tint+'">'+p.mono+'</span>';
+    if (p.type === "svc") return '<span class="ico svc">'+I.svc+'</span>';
+    return '<span class="ico bg">'+I.bg+'</span>';
+  }
+
+  // ---------- live graph engine ----------
+  var graphs = [];
+  function makeGraph(canvas, kind, seedPct) {
+    var pts = [];
+    for (var i = 0; i < 60; i++) pts.push(seedPct + (Math.random()-.5)*8);
+    var g = { canvas: canvas, kind: kind, pts: pts, cur: seedPct };
+    graphs.push(g);
+    return g;
+  }
+  function drawGraph(g) {
+    var c = g.canvas, ctx = c.getContext("2d");
+    var dpr = window.devicePixelRatio || 1;
+    var w = c.clientWidth, h = c.clientHeight || 60;
+    if (c.width !== w*dpr || c.height !== h*dpr) { c.width = w*dpr; c.height = h*dpr; }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+    var css = getComputedStyle(document.documentElement);
+    var line = css.getPropertyValue(g.kind === "mem" ? "--mem" : "--cpu").trim();
+    var fill = css.getPropertyValue(g.kind === "mem" ? "--mem-2" : "--cpu-2").trim();
+    var grid = css.getPropertyValue("--divider").trim();
+    // grid
+    ctx.strokeStyle = grid; ctx.lineWidth = 1;
+    for (var gy = 1; gy < 4; gy++){ var y = h*gy/4; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+    var n = g.pts.length, max = 100;
+    function X(i){ return i/(n-1)*w; }
+    function Y(v){ return h - (v/max)*(h-6) - 3; }
+    // fill
+    ctx.beginPath(); ctx.moveTo(0,h);
+    for (var i=0;i<n;i++) ctx.lineTo(X(i), Y(g.pts[i]));
+    ctx.lineTo(w,h); ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+    // line
+    ctx.beginPath();
+    for (i=0;i<n;i++){ var x=X(i), y=Y(g.pts[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    ctx.strokeStyle = line; ctx.lineWidth = 1.8; ctx.lineJoin="round"; ctx.stroke();
+    // endpoint
+    var ex = X(n-1), ey = Y(g.pts[n-1]);
+    ctx.beginPath(); ctx.arc(ex,ey,3,0,7); ctx.fillStyle = line; ctx.fill();
+    ctx.beginPath(); ctx.arc(ex,ey,6,0,7); ctx.strokeStyle = fill; ctx.lineWidth = 3; ctx.stroke();
+  }
+  var STATE = { cpu: 21, memGB: 12.4, memTotal: 32 };
+  function tick() {
+    STATE.cpu = Math.max(3, Math.min(96, STATE.cpu + (Math.random()-.5)*14));
+    STATE.memGB = Math.max(8, Math.min(28, STATE.memGB + (Math.random()-.5)*0.5));
+    graphs.forEach(function(g){
+      if (!document.body.contains(g.canvas)) return;
+      var v = g.kind === "mem" ? (STATE.memGB/STATE.memTotal*100) : STATE.cpu;
+      g.pts.push(v + (Math.random()-.5)*3); if (g.pts.length>60) g.pts.shift();
+      drawGraph(g);
+    });
+    document.querySelectorAll("[data-live=cpu]").forEach(function(e){ e.textContent = STATE.cpu.toFixed(0)+"%"; });
+    document.querySelectorAll("[data-live=mem]").forEach(function(e){ e.textContent = STATE.memGB.toFixed(1)+" GB"; });
+    document.querySelectorAll("[data-live=mempct]").forEach(function(e){ e.textContent = (STATE.memGB/STATE.memTotal*100).toFixed(0)+"%"; });
+  }
+
+  // ---------- selection + kill ----------
+  var selected = null;
+  function selectRow(el, p) {
+    document.querySelectorAll(".row.sel").forEach(function(r){ r.classList.remove("sel"); });
+    if (el) el.classList.add("sel");
+    selected = p;
+    document.querySelectorAll("[data-needs-sel]").forEach(function(b){ b.disabled = !p; });
+    var dn = document.getElementById("dt-name");
+    if (dn) renderDetail(p);
+  }
+  function killProc(p) {
+    if (!p) return;
+    [APPS,BG,BG].forEach(function(){});
+    [ "apps","background","services" ].forEach(function(k){
+      var arr = VIEWS[k].data, ix = arr.indexOf(p); if (ix>=0) arr.splice(ix,1);
+    });
+    hideCtx();
+    render(current); // re-render active variant
+    toast("Ended “"+(p.name)+"”");
+    selected = null;
+  }
+  var toastT;
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.innerHTML = '<span style="color:var(--danger)">'+I.kill+'</span>'+msg;
+    t.classList.add("show"); clearTimeout(toastT);
+    toastT = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- context menu ----------
+  function showCtx(x, y, p) {
+    var c = document.getElementById("ctx");
+    c.innerHTML =
+      '<button data-act="detail">'+I.detail+' Go to details</button>'+
+      '<button data-act="file">'+I.file+' Open file location</button>'+
+      '<hr>'+
+      '<button class="danger" data-act="kill">'+I.kill+' End task</button>';
+    c.style.display = "block";
+    var vw = window.innerWidth, vh = window.innerHeight, r = c.getBoundingClientRect();
+    c.style.left = Math.min(x, vw - r.width - 8) + "px";
+    c.style.top = Math.min(y, vh - r.height - 8) + "px";
+    c.onclick = function(e){ var b = e.target.closest("button"); if(!b) return; if (b.dataset.act==="kill") killProc(p); else hideCtx(); };
+  }
+  function hideCtx(){ document.getElementById("ctx").style.display = "none"; }
+  document.addEventListener("click", function(e){ if (!e.target.closest("#ctx")) hideCtx(); });
+  document.addEventListener("scroll", hideCtx, true);
+
+  function attachRow(el, p) {
+    el.addEventListener("click", function(){ selectRow(el, p); });
+    el.addEventListener("contextmenu", function(e){ e.preventDefault(); selectRow(el, p); showCtx(e.clientX, e.clientY, p); });
+  }
+
+  // ---------- column templates ----------
+  function colTemplate(view) {
+    if (view === "services") return "grid-template-columns: minmax(160px,2fr) 1.4fr 96px;";
+    return "grid-template-columns: minmax(180px,2.4fr) 84px 108px;";
+  }
+  function headCells(view) {
+    if (view === "services")
+      return '<div>Name</div><div>Description</div><div style="text-align:right">Status</div>';
+    return '<div>Name</div><div style="text-align:right">CPU</div><div style="text-align:right">Memory</div>';
+  }
+  function rowCells(p, view) {
+    if (view === "services") {
+      var running = p.state === "Running";
+      return '<div class="cell name">'+icoFor(p)+'<span class="lbl">'+p.disp+'</span></div>'+
+             '<div class="cell" style="color:var(--text-3)">'+p.name+'</div>'+
+             '<div class="cell" style="text-align:right"><span class="pill '+(running?"run":"stop")+'">'+p.state+'</span></div>';
+    }
+    return '<div class="cell name">'+icoFor(p)+'<span class="lbl">'+p.name+'</span></div>'+
+           '<div class="cell num '+heat(p.cpu)+'">'+p.cpu.toFixed(1)+'%</div>'+
+           '<div class="cell num '+memHeat(p.mem)+'">'+fmtMem(p.mem)+'</div>';
+  }
+  function buildList(view, opts) {
+    opts = opts || {};
+    var wrap = document.createElement("div");
+    wrap.className = "plist";
+    wrap.style.flex = "1"; wrap.style.minHeight = "0";
+    var head = document.createElement("div");
+    head.className = "col-head"; head.setAttribute("style", colTemplate(view));
+    head.innerHTML = headCells(view);
+    var rows = document.createElement("div"); rows.className = "rows";
+    VIEWS[view].data.forEach(function(p){
+      var r = document.createElement("div");
+      r.className = "row"; r.setAttribute("style", colTemplate(view));
+      r.innerHTML = rowCells(p, view) + (opts.inlineKill && view!=="services" ? '<button class="kill-inline">End task</button>' : "");
+      attachRow(r, p);
+      if (opts.inlineKill) { var k = r.querySelector(".kill-inline"); if (k) k.addEventListener("click", function(e){ e.stopPropagation(); killProc(p); }); }
+      rows.appendChild(r);
+    });
+    wrap.appendChild(head); wrap.appendChild(rows);
+    return wrap;
+  }
+
+  // ---------- graph card html ----------
+  function graphCard(kind) {
+    var isMem = kind === "mem";
+    return '<div class="graph">'+
+      '<div class="g-top"><span class="dot" style="background:var(--'+(isMem?"mem":"cpu")+')"></span>'+
+        '<span class="g-name">'+(isMem?"Memory":"CPU")+'</span>'+
+        '<span class="g-val" data-live="'+(isMem?"mem":"cpu")+'">'+(isMem?"12.4 GB":"21%")+'</span></div>'+
+      '<span class="g-sub">'+(isMem?"of 32 GB · <span data-live=mempct>39%</span> used":"12 cores · 3.8 GHz")+'</span>'+
+      '<canvas data-graph="'+kind+'" height="72"></canvas></div>';
+  }
+  function wireGraphs(root, seedCpu, seedMem) {
+    var cc = root.querySelector('[data-graph=cpu]'); if (cc) makeGraph(cc, "cpu", seedCpu||21);
+    var mc = root.querySelector('[data-graph=mem]'); if (mc) makeGraph(mc, "mem", seedMem||39);
+    requestAnimationFrame(function(){ graphs.forEach(drawGraph); });
+  }
+
+  // ---------- current view per variant ----------
+  var curView = { A:"apps", B:"apps" };
+
+  // ================= VARIANT A =================
+  function renderA(stage) {
+    var view = curView.A;
+    var rail =
+      '<div class="A-rail">'+
+        Object.keys(VIEWS).map(function(k){
+          var ic = k==="apps"?I.apps:k==="services"?I.svc:I.bg;
+          return '<div class="navitem '+(k===view?"on":"")+'" data-view="'+k+'">'+ic+
+            '<span>'+VIEWS[k].label+'</span><span class="count">'+VIEWS[k].data.length+'</span></div>';
+        }).join("")+
+      '</div>';
+    var main =
+      '<div class="A-main">'+
+        '<div class="toolbar">'+
+          '<div class="h1">'+VIEWS[view].label+'</div>'+
+          '<div style="flex:1"></div>'+
+          '<button class="btn danger" data-needs-sel disabled id="A-kill">'+I.kill+' End task</button>'+
+        '</div>'+
+        '<div class="A-strip">'+graphCard("cpu")+graphCard("mem")+'</div>'+
+        '<div class="A-listwrap" id="A-list"></div>'+
+      '</div>';
+    stage.innerHTML = rail + main;
+    stage.querySelector("#A-list").appendChild(buildList(view));
+    stage.querySelectorAll(".navitem").forEach(function(n){
+      n.addEventListener("click", function(){ curView.A = n.dataset.view; selected=null; render("A"); });
+    });
+    stage.querySelector("#A-kill").addEventListener("click", function(){ killProc(selected); });
+    wireGraphs(stage, 21, 39);
+  }
+
+  // ================= VARIANT B =================
+  function renderDetail(p) {
+    var box = document.getElementById("B-detail");
+    if (!box) return;
+    if (!p) { box.innerHTML = '<div class="muted" style="text-align:center;padding:8px 0">Select a process to see details and actions.</div>'; return; }
+    var rows = p.type==="svc"
+      ? '<div class="k">Service</div><div class="v">'+p.name+'</div><div class="k">Status</div><div class="v">'+p.state+'</div>'
+      : '<div class="k">CPU</div><div class="v">'+p.cpu.toFixed(1)+'%</div><div class="k">Memory</div><div class="v">'+fmtMem(p.mem)+'</div>'+
+        '<div class="k">PID</div><div class="v">'+(4000+Math.floor(p.mem)%6000)+'</div><div class="k">Type</div><div class="v">'+(p.type==="app"?"App":"Background")+'</div>';
+    box.innerHTML =
+      '<div class="dt-name">'+icoFor(p)+(p.type==="svc"?p.disp:p.name)+'</div>'+
+      '<div class="dt-grid">'+rows+'</div>'+
+      (p.type==="svc" ? '<div class="muted">Services are view-only in v1.</div>'
+        : '<button class="btn danger" id="B-kill" style="justify-content:center">'+I.kill+' End task</button>');
+    var bk = document.getElementById("B-kill"); if (bk) bk.addEventListener("click", function(){ killProc(selected); });
+  }
+  function renderB(stage) {
+    var view = curView.B;
+    var pivot = '<div class="pivot">'+
+      Object.keys(VIEWS).map(function(k){
+        return '<div class="tab '+(k===view?"on":"")+'" data-view="'+k+'">'+VIEWS[k].label+'<span class="c">'+VIEWS[k].data.length+'</span></div>';
+      }).join("")+'</div>';
+    var main = '<div class="B-main">'+pivot+
+      '<div class="toolbar"><div class="search">'+I.search+' Search '+VIEWS[view].label.toLowerCase()+'…</div></div>'+
+      '<div id="B-list" style="flex:1;min-height:0;display:flex;flex-direction:column"></div></div>';
+    var dock = '<div class="B-dock">'+graphCard("cpu")+graphCard("mem")+
+      '<div class="detail" id="B-detail"></div></div>';
+    stage.innerHTML = main + dock;
+    stage.querySelector("#B-list").appendChild(buildList(view));
+    stage.querySelectorAll(".tab").forEach(function(t){
+      t.addEventListener("click", function(){ curView.B = t.dataset.view; selected=null; render("B"); });
+    });
+    renderDetail(null);
+    wireGraphs(stage, 21, 39);
+  }
+
+  // ================= VARIANT C =================
+  var collapsed = {};
+  function renderC(stage) {
+    var main = document.createElement("div"); main.className = "C-main";
+    var scroll = document.createElement("div"); scroll.className = "rows"; scroll.style.flex="1";
+    Object.keys(VIEWS).forEach(function(k){
+      var v = VIEWS[k], isSvc = k==="services";
+      var head = document.createElement("div"); head.className="grouphead";
+      var totCpu = v.data.reduce(function(a,p){return a+(p.cpu||0);},0);
+      var totMem = v.data.reduce(function(a,p){return a+(p.mem||0);},0);
+      head.innerHTML = (I.chev)+
+        '<span>'+v.label+'</span><span class="g-count">'+v.data.length+'</span>'+
+        (isSvc ? '<span class="g-agg"><span>'+v.data.filter(function(p){return p.state==="Running";}).length+' running</span></span>'
+               : '<span class="g-agg"><span>'+totCpu.toFixed(1)+'%</span><span>'+fmtMem(totMem)+'</span></span>');
+      var chev = head.querySelector(".chev");
+      if (collapsed[k]) chev.style.transform = "rotate(0deg)"; else chev.style.transform = "rotate(90deg)";
+      head.addEventListener("click", function(){ collapsed[k] = !collapsed[k]; render("C"); });
+      scroll.appendChild(head);
+      if (!collapsed[k]) v.data.forEach(function(p){
+        var r = document.createElement("div"); r.className="row"; r.setAttribute("style", colTemplate(k));
+        r.innerHTML = rowCells(p,k) + (!isSvc ? '<button class="kill-inline">End task</button>' : "");
+        attachRow(r, p);
+        var kb = r.querySelector(".kill-inline"); if (kb) kb.addEventListener("click", function(e){ e.stopPropagation(); killProc(p); });
+        scroll.appendChild(r);
+      });
+    });
+    main.appendChild(scroll);
+    var bottom = document.createElement("div"); bottom.className = "C-bottom";
+    bottom.innerHTML =
+      '<div class="C-meter"><div class="m-txt"><span class="m-lbl">CPU</span><span class="m-val" data-live="cpu">21%</span></div><canvas data-graph="cpu"></canvas></div>'+
+      '<div class="C-meter"><div class="m-txt"><span class="m-lbl">Memory</span><span class="m-val" data-live="mem">12.4 GB</span></div><canvas data-graph="mem"></canvas></div>';
+    main.appendChild(bottom);
+    stage.appendChild(main);
+    wireGraphs(stage, 21, 39);
+  }
+
+  // ---------- render dispatch ----------
+  var current = "A";
+  var META = { A:"Rail + top graphs", B:"Top tabs + right dock", C:"Grouped list + bottom bar" };
+  function render(which) {
+    current = which;
+    graphs = [];
+    var stage = document.getElementById("stage");
+    stage.innerHTML = "";
+    if (which === "A") renderA(stage);
+    else if (which === "B") renderB(stage);
+    else renderC(stage);
+    document.querySelectorAll("[data-needs-sel]").forEach(function(b){ b.disabled = true; });
+    document.getElementById("swlbl").innerHTML = "<b>"+which+"</b>"+META[which];
+    var u = new URL(window.location.href); u.searchParams.set("variant", which);
+    try { history.replaceState(null, "", u); } catch(e){}
+  }
+
+  // ---------- switcher ----------
+  var ORDER = ["A","B","C"];
+  function cycle(dir){ var i = ORDER.indexOf(current); i = (i + dir + 3) % 3; render(ORDER[i]); }
+  document.getElementById("prev").addEventListener("click", function(){ cycle(-1); });
+  document.getElementById("next").addEventListener("click", function(){ cycle(1); });
+  document.addEventListener("keydown", function(e){
+    var t = e.target; if (t && (t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable)) return;
+    if (e.key === "ArrowLeft") cycle(-1);
+    else if (e.key === "ArrowRight") cycle(1);
+  });
+
+  // ---------- boot ----------
+  var start = (new URL(window.location.href)).searchParams.get("variant");
+  render(ORDER.indexOf(start) >= 0 ? start : "A");
+  setInterval(tick, 1000);
+  window.addEventListener("resize", function(){ graphs.forEach(drawGraph); });
+})();
+</script>
