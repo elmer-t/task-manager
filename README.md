@@ -1,8 +1,12 @@
 # Task Manager
 
-A personal, daily-use Windows task manager — Fluent-styled, WinUI 3, learning-focused.
-This repository implements the locked [v1 spec](docs/spec/v1.md); the glossary it shares
-with the code is [`CONTEXT.md`](CONTEXT.md).
+A personal, daily-use Windows task manager — Fluent-styled, WinUI 3. This is a **research
+and learning project**: an exercise in building a real Windows app from a locked spec, raw
+Win32 interop, and spec-driven development — not a replacement for the built-in Task
+Manager. The repository implements the locked [v1 spec](docs/spec/v1.md); the glossary it
+shares with the code is [`CONTEXT.md`](CONTEXT.md).
+
+![Task Manager screenshot](docs/TaskManagerscreenshot.png)
 
 Three views (Apps · Background processes · Services) behind a left rail, a pinned
 system-wide CPU + memory graph strip, per-process CPU %/memory columns, and **End task** as
@@ -63,8 +67,9 @@ Prerequisites:
 - Windows 10 22H2 / Windows 11 22H2 or later. (The Memory column uses
   `PROCESS_MEMORY_COUNTERS_EX2.PrivateWorkingSetSize`, which needs 22H2+.)
 - .NET 8 SDK.
-- The **Windows App SDK** / WinUI 3 workload (Visual Studio 2022 "Windows application
-  development", or the standalone Windows App SDK).
+- The **Windows App SDK 1.8** / WinUI 3 workload (Visual Studio 2022 "Windows application
+  development", or the standalone Windows App SDK). The NuGet packages restore from
+  nuget.org via the repo-level `nuget.config`.
 
 ```powershell
 # Run the pure-logic tests (any OS with the .NET 8 SDK):
@@ -94,13 +99,6 @@ Every requirement in the spec's [§9 checklist](docs/spec/v1.md) maps to code:
 | End task: select-then-kill, confirm, blank-cell degradation, elevate on Access Denied | `ViewModels/MainViewModel.cs`, `Interop/ProcessTerminator.cs`, `Interop/ElevationService.cs`, `MainWindow.xaml.cs` |
 | Negligible self-overhead (no PDH-per-process / WMI) | `Interop/*` — toolhelp snapshot + cheap handle queries only |
 
-## Implementation note
+## License
 
-This codebase was authored against the spec and Microsoft's Win32 / WinUI documentation
-without a Windows build environment available in the authoring session. The
-platform-neutral `TaskManager.Core` and its tests are self-contained; the WinUI head is
-written to standard CsWin32 / WinUI idioms but has **not been compiled on Windows yet**, so
-expect the first Windows build to need minor interop touch-ups (exact CsWin32 generated
-type/overload names, and confirming `PROCESS_MEMORY_COUNTERS_EX2` is present in the pinned
-CsWin32 metadata). The service enumeration in `Interop/ServiceSource.cs` — the most
-marshaling-heavy file — is the most likely to need a small adjustment.
+MIT — see [LICENSE](LICENSE). Built for research and learning; use at your own risk.
