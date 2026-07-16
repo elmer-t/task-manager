@@ -19,7 +19,8 @@
         PaneDisplayMode="Left"
         IsSettingsVisible="False"
         IsBackButtonVisible="Collapsed"
-        SelectionChanged="OnNavSelectionChanged">
+        SelectionChanged="OnNavSelectionChanged"
+        ItemInvoked="OnNavItemInvoked">
 
         <NavigationView.MenuItems>
             <NavigationViewItem Content="Apps" Tag="Apps" IsSelected="True">
@@ -38,6 +39,19 @@
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
         </NavigationView.MenuItems>
+
+        <!--
+            About (issue #18): a footer rail item that opens a modal dialog. SelectsOnInvoked
+            is False so invoking it fires ItemInvoked WITHOUT changing which primary view
+            (Apps/Background/Services) is selected — the dialog is an overlay, not a fourth view.
+        -->
+        <NavigationView.FooterMenuItems>
+            <NavigationViewItem Content="About" Tag="About" SelectsOnInvoked="False">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE946;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.FooterMenuItems>
 
         <Grid Padding="20,12,20,16" RowSpacing="14">
             <Grid.Resources>

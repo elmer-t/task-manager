@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -5,6 +6,7 @@ using Microsoft.UI.Xaml.Media;
 using TaskManager.App.Interop;
 using TaskManager.App.Monitoring;
 using TaskManager.App.ViewModels;
+using TaskManager.Core.Product;
 
 namespace TaskManager.App;
 
@@ -59,6 +61,17 @@ public sealed partial class MainWindow : Window, IEndTaskInteraction
             ViewDescriptor.TryFromTag(tag, out ViewKind kind))
         {
             ViewModel.SelectedView = kind;
+        }
+    }
+
+    private async void OnNavItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+    {
+        // The footer About item is SelectsOnInvoked="False", so it arrives here without
+        // touching the selected view. The primary rail items still route through
+        // OnNavSelectionChanged, so they need no handling on this path.
+        if (args.InvokedItemContainer is NavigationViewItem { Tag: "About" })
+        {
+            await ShowAboutAsync();
         }
     }
 
@@ -125,6 +138,62 @@ public sealed partial class MainWindow : Window, IEndTaskInteraction
             Title = "Couldn't end task",
             Content = $"Task Manager couldn't end “{processName}”. It may have already exited.",
             CloseButtonText = "OK",
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = Content.XamlRoot,
+        };
+
+        await dialog.ShowAsync();
+    }
+
+    // ---- About dialog (issue #18) ----
+
+    /// <summary>
+    /// Shows the About dialog. Unlike End task, this carries no view-model state or business
+    /// logic — it's a purely presentational overlay — so it stays here in the view rather than
+    /// behind an interaction interface, but reuses the same Fluent <see cref="ContentDialog"/>
+    /// + <c>XamlRoot</c> convention (system dark/light, Mica-consistent). The version and
+    /// copyright are read from the running assembly's metadata so they always match the build
+    /// (the csproj <c>&lt;Version&gt;</c> / <c>&lt;Copyright&gt;</c>); the rest of the content
+    /// is the single source of truth in <see cref="AboutInfo"/>.
+    /// </summary>
+    private async Task ShowAboutAsync()
+    {
+        Assembly assembly = typeof(MainWindow).Assembly;
+        Version version = assembly.GetName().Version ?? new Version(0, 0, 0);
+        string copyright = assembly.GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright ?? string.Empty;
+        var about = new AboutInfo(version, copyright);
+
+        var content = new StackPanel { Spacing = 4, Width = 320 };
+        content.Children.Add(new TextBlock
+        {
+            Text = AboutInfo.Name,
+            Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"],
+        });
+        content.Children.Add(new TextBlock { Text = about.VersionText });
+        content.Children.Add(new TextBlock
+        {
+            Text = AboutInfo.Tagline,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 8, 0, 0),
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = about.CopyrightLine,
+            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+            Margin = new Thickness(0, 8, 0, 0),
+        });
+        content.Children.Add(new HyperlinkButton
+        {
+            Content = AboutInfo.RepositoryUrl,
+            NavigateUri = new Uri(AboutInfo.RepositoryUrl),
+            Padding = new Thickness(0),
+        });
+
+        var dialog = new ContentDialog
+        {
+            Title = "About",
+            Content = content,
+            CloseButtonText = "Close",
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = Content.XamlRoot,
         };

@@ -22,6 +22,11 @@
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
+    <!-- The one authoritative version and copyright. The About dialog (issue #18) reads
+         both from the running assembly's metadata at runtime, so neither can drift from the
+         build; the copyright holder here matches the repo's LICENSE. -->
+    <Version>1.0.0</Version>
+    <Copyright>© 2026 REDHEADIT</Copyright>
     <!-- Carry the Windows App SDK runtime in the output folder so an unpackaged local
          build runs without a matching WindowsAppRuntime install (spec §1). -->
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
