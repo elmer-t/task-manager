@@ -10,6 +10,14 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
+            <!--
+                Monospaced (fixed-advance) figures so the CPU% / Memory columns line up
+                vertically down the list (spec §6 "tabular figures"). WinUI 3 exposes no
+                OpenType feature selector on TextBlock, so we select a monospaced family;
+                Consolas ships on every supported Windows (10/11 22H2+, per the README).
+            -->
+            <FontFamily x:Key="TabularNumericFontFamily">Consolas</FontFamily>
+
             <!-- Shared converters and the usage-heat / status-pill brushes (theme-aware). -->
             <conv:UsageHeatToBrushConverter
                 x:Key="HeatBrush"

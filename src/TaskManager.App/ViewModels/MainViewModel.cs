@@ -16,15 +16,18 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IProcessTerminator _terminator;
     private readonly IElevationService _elevation;
     private readonly IEndTaskInteraction _interaction;
+    private readonly IProcessIconResolver _iconResolver;
 
     public MainViewModel(
         IProcessTerminator terminator,
         IElevationService elevation,
-        IEndTaskInteraction interaction)
+        IEndTaskInteraction interaction,
+        IProcessIconResolver iconResolver)
     {
         _terminator = terminator;
         _elevation = elevation;
         _interaction = interaction;
+        _iconResolver = iconResolver;
     }
 
     public GraphStripViewModel GraphStrip { get; } = new();
@@ -35,30 +38,17 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ObservableCollection<ServiceRowViewModel> Services { get; } = new();
 
+    private ViewDescriptor CurrentView => ViewDescriptor.For(SelectedView);
+
     /// <summary>The process collection behind the currently selected view (Apps or Background).</summary>
     public ObservableCollection<ProcessRowViewModel> CurrentProcesses =>
         SelectedView == ViewKind.Background ? Background : Apps;
 
-    public bool IsProcessView => SelectedView != ViewKind.Services;
+    public bool IsProcessView => CurrentView.IsProcessView;
 
-    public bool IsServicesView => SelectedView == ViewKind.Services;
+    public bool IsServicesView => !CurrentView.IsProcessView;
 
-    public string HeaderText => SelectedView switch
-    {
-        ViewKind.Apps => "Apps",
-        ViewKind.Background => "Background processes",
-        ViewKind.Services => "Services",
-        _ => string.Empty,
-    };
-
-    [ObservableProperty]
-    private int _appsCount;
-
-    [ObservableProperty]
-    private int _backgroundCount;
-
-    [ObservableProperty]
-    private int _servicesCount;
+    public string HeaderText => CurrentView.Header;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentProcesses))]
@@ -92,19 +82,15 @@ public sealed partial class MainViewModel : ObservableObject
 
         CollectionSync.Apply(Apps, apps,
             static s => s.ProcessId, static r => r.ProcessId,
-            static s => new ProcessRowViewModel(s), static (r, s) => r.Update(s));
+            s => new ProcessRowViewModel(s, _iconResolver), static (r, s) => r.Update(s));
 
         CollectionSync.Apply(Background, background,
             static s => s.ProcessId, static r => r.ProcessId,
-            static s => new ProcessRowViewModel(s), static (r, s) => r.Update(s));
+            s => new ProcessRowViewModel(s, _iconResolver), static (r, s) => r.Update(s));
 
         CollectionSync.Apply(Services, snapshot.Services,
             static s => s.ServiceName, static r => r.ServiceName,
             static s => new ServiceRowViewModel(s), static (r, s) => r.Update(s));
-
-        AppsCount = Apps.Count;
-        BackgroundCount = Background.Count;
-        ServicesCount = Services.Count;
 
         // If the selected process was killed / vanished, clear the stale selection.
         if (SelectedProcess is not null && !CurrentProcesses.Contains(SelectedProcess))

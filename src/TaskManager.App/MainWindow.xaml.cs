@@ -22,7 +22,8 @@ public sealed partial class MainWindow : Window, IEndTaskInteraction
     {
         // Construct the view model before InitializeComponent so x:Bind and the initial
         // NavigationView selection (which fires SelectionChanged during load) see it.
-        ViewModel = new MainViewModel(new ProcessTerminator(), new ElevationService(), this);
+        ViewModel = new MainViewModel(
+            new ProcessTerminator(), new ElevationService(), this, new ProcessIconResolver());
 
         InitializeComponent();
 
