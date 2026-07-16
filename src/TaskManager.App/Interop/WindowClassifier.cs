@@ -42,7 +42,7 @@ internal sealed class WindowClassifier
         return true; // keep enumerating
     }
 
-    private static bool IsQualifyingWindow(HWND hwnd, out uint processId)
+    private static unsafe bool IsQualifyingWindow(HWND hwnd, out uint processId)
     {
         processId = 0;
 
@@ -57,13 +57,15 @@ internal sealed class WindowClassifier
             return false;
         }
 
-        _ = PInvoke.GetWindowThreadProcessId(hwnd, out processId);
+        uint owningProcessId = 0;
+        _ = PInvoke.GetWindowThreadProcessId(hwnd, &owningProcessId);
+        processId = owningProcessId;
         return processId != 0;
     }
 
     private static bool HasToolWindowStyle(HWND hwnd)
     {
-        nint exStyle = PInvoke.GetWindowLongPtrW(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+        nint exStyle = PInvoke.GetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
         return ((uint)exStyle & WsExToolWindow) != 0;
     }
 

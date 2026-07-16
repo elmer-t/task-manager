@@ -16,7 +16,7 @@ internal sealed class ProcessTerminator : IProcessTerminator
 {
     public TerminationOutcome Terminate(int processId)
     {
-        using var handle = PInvoke.OpenProcess(
+        using var handle = PInvoke.OpenProcess_SafeHandle(
             PROCESS_ACCESS_RIGHTS.PROCESS_TERMINATE,
             bInheritHandle: false,
             (uint)processId);

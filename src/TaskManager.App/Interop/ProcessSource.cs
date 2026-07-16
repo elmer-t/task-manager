@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using TaskManager.Core.Abstractions;
 using TaskManager.Core.Models;
 using TaskManager.Core.Monitoring;
@@ -51,9 +52,10 @@ internal sealed class ProcessSource : IProcessSource
     /// source) so the two stateful samplers stay independent; the extra GetSystemTimes
     /// call is negligible (spec §5).
     /// </summary>
-    private ulong SampleSystemTotalDelta()
+    private unsafe ulong SampleSystemTotalDelta()
     {
-        if (!PInvoke.GetSystemTimes(out _, out FILETIME kernel, out FILETIME user))
+        FILETIME kernel, user;
+        if (!PInvoke.GetSystemTimes(null, &kernel, &user))
         {
             return 0;
         }
@@ -67,7 +69,7 @@ internal sealed class ProcessSource : IProcessSource
 
     private (double? cpu, ulong? memory) SampleProcessMetrics(uint processId, ulong systemDelta)
     {
-        using var handle = PInvoke.OpenProcess(
+        using var handle = PInvoke.OpenProcess_SafeHandle(
             PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION,
             bInheritHandle: false,
             processId);
@@ -127,7 +129,7 @@ internal sealed class ProcessSource : IProcessSource
 
     private static IEnumerable<(uint ProcessId, string Name)> EnumerateProcesses()
     {
-        using var snapshot = PInvoke.CreateToolhelp32Snapshot(CREATE_TOOLHELP_SNAPSHOT_FLAGS.TH32CS_SNAPPROCESS, 0);
+        using var snapshot = PInvoke.CreateToolhelp32Snapshot_SafeHandle(CREATE_TOOLHELP_SNAPSHOT_FLAGS.TH32CS_SNAPPROCESS, 0);
         if (snapshot.IsInvalid)
         {
             yield break;

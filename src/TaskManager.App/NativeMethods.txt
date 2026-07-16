@@ -1,30 +1,30 @@
-# CsWin32 binding surface (spec §4 / §9 checklist).
-# Each line names a Win32 function, struct, enum, or constant for which the
-# C#/Win32 P/Invoke source generator emits a wrapper under Windows.Win32.*.
+// CsWin32 binding surface (spec §4 / §9 checklist).
+// Each line names a Win32 function, struct, enum, or constant for which the
+// C#/Win32 P/Invoke source generator emits a wrapper under Windows.Win32.*.
 
-# --- Process enumeration: no per-process handle needed (spec §4) ---
+// --- Process enumeration: no per-process handle needed (spec §4) ---
 CreateToolhelp32Snapshot
 Process32FirstW
 Process32NextW
 PROCESSENTRY32W
-TH32CS_SNAPPROCESS
+CREATE_TOOLHELP_SNAPSHOT_FLAGS
 
-# --- Per-process handles: CPU %, memory, terminate ---
+// --- Per-process handles: CPU %, memory, terminate ---
 OpenProcess
 CloseHandle
 GetProcessTimes
 GetProcessMemoryInfo
 PROCESS_MEMORY_COUNTERS_EX2
 TerminateProcess
-PROCESS_QUERY_LIMITED_INFORMATION
-PROCESS_TERMINATE
+PROCESS_ACCESS_RIGHTS
+WIN32_ERROR
 
-# --- System-wide CPU + memory (both graphs always work, spec §4) ---
+// --- System-wide CPU + memory (both graphs always work, spec §4) ---
 GetSystemTimes
 GlobalMemoryStatusEx
 GetPerformanceInfo
 
-# --- App vs Background window-based classification (spec §7) ---
+// --- App vs Background window-based classification (spec §7) ---
 EnumWindows
 GetWindowThreadProcessId
 IsWindowVisible
@@ -36,20 +36,18 @@ WINDOW_LONG_PTR_INDEX
 WINDOW_EX_STYLE
 GET_WINDOW_CMD
 
-# --- Services: enumerate, states, hosting PID, description (spec §4 / §6) ---
+// --- Services: enumerate, states, hosting PID, description (spec §4 / §6) ---
 OpenSCManagerW
 EnumServicesStatusExW
 OpenServiceW
 QueryServiceConfig2W
 CloseServiceHandle
 SC_MANAGER_ENUMERATE_SERVICE
-SC_ENUM_PROCESS_INFO
+SC_ENUM_TYPE
 SERVICE_QUERY_CONFIG
-SERVICE_CONFIG_DESCRIPTION
+SERVICE_CONFIG
 SERVICE_DESCRIPTIONW
 ENUM_SERVICE_TYPE
-SERVICE_STATE
+ENUM_SERVICE_STATE
+ENUM_SERVICE_STATUS_PROCESSW
 SERVICE_STATUS_CURRENT_STATE
-
-# --- Elevation affordance: relaunch elevated via the runas verb (spec §8) ---
-ShellExecuteW

@@ -1,16 +1,14 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Security.Principal;
 using TaskManager.Core.Abstractions;
-using Windows.Win32;
-using Windows.Win32.Foundation;
-using Windows.Win32.UI.Shell;
-using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace TaskManager.App.Interop;
 
 /// <summary>
 /// The elevation affordance (spec §8). Reports current elevation, and relaunches the app
-/// elevated via ShellExecute with the <c>runas</c> verb (the UAC prompt). On a successful
-/// relaunch it exits the current, un-elevated instance so the elevated one takes over.
+/// elevated via the shell's <c>runas</c> verb (the UAC prompt). On a successful relaunch
+/// it exits the current, un-elevated instance so the elevated one takes over.
 /// </summary>
 internal sealed class ElevationService : IElevationService
 {
@@ -31,17 +29,22 @@ internal sealed class ElevationService : IElevationService
             return false;
         }
 
-        // ShellExecute returns an HINSTANCE; a value > 32 means the launch succeeded.
-        HINSTANCE result = PInvoke.ShellExecuteW(
-            hwnd: default,
-            lpOperation: "runas",
-            lpFile: executablePath,
-            lpParameters: null,
-            lpDirectory: null,
-            nShowCmd: SHOW_WINDOW_CMD.SW_SHOWNORMAL);
+        // UseShellExecute + "runas" is ShellExecuteEx under the hood: it shows the UAC
+        // prompt, and reports a declined prompt as ERROR_CANCELLED (Win32Exception).
+        var startInfo = new ProcessStartInfo(executablePath)
+        {
+            UseShellExecute = true,
+            Verb = "runas",
+        };
 
-        // HINSTANCE > 32 means the launch succeeded (classic ShellExecute contract).
-        if ((nint)result.Value <= 32)
+        try
+        {
+            if (Process.Start(startInfo) is null)
+            {
+                return false;
+            }
+        }
+        catch (Win32Exception)
         {
             // User dismissed UAC (or launch failed): stay running un-elevated.
             return false;

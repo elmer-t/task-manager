@@ -1,4 +1,4 @@
-using Windows.Win32.Foundation;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace TaskManager.App.Interop;
 
@@ -9,6 +9,8 @@ namespace TaskManager.App.Interop;
 /// </summary>
 internal static class FileTimeExtensions
 {
+    // FILETIME's fields are signed int32; go through uint so the low half's sign bit
+    // never bleeds into the combined value.
     public static ulong ToUInt64(this FILETIME value) =>
-        ((ulong)value.dwHighDateTime << 32) | value.dwLowDateTime;
+        ((ulong)(uint)value.dwHighDateTime << 32) | (uint)value.dwLowDateTime;
 }

@@ -1,9 +1,9 @@
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using TaskManager.Core.Abstractions;
 using TaskManager.Core.Models;
 using TaskManager.Core.Monitoring;
 using Windows.Win32;
-using Windows.Win32.Foundation;
 using Windows.Win32.System.ProcessStatus;
 using Windows.Win32.System.SystemInformation;
 
@@ -29,9 +29,10 @@ internal sealed class SystemMetricsSource : ISystemMetricsSource
         return new SystemSample(cpuPercent, memoryUsed, memoryTotal, commitUsed, commitLimit);
     }
 
-    private double SampleCpuPercent()
+    private unsafe double SampleCpuPercent()
     {
-        if (!PInvoke.GetSystemTimes(out FILETIME idle, out FILETIME kernel, out FILETIME user))
+        FILETIME idle, kernel, user;
+        if (!PInvoke.GetSystemTimes(&idle, &kernel, &user))
         {
             return 0.0;
         }
@@ -78,7 +79,7 @@ internal sealed class SystemMetricsSource : ISystemMetricsSource
     private static (ulong used, ulong limit) SampleCommitCharge()
     {
         var info = new PERFORMANCE_INFORMATION { cb = (uint)Marshal.SizeOf<PERFORMANCE_INFORMATION>() };
-        if (!PInvoke.GetPerformanceInfo(out info, info.cb))
+        if (!PInvoke.GetPerformanceInfo(ref info, info.cb))
         {
             return (0, 0);
         }

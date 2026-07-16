@@ -11,8 +11,6 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Shared converters and the usage-heat / status-pill brushes (theme-aware). -->
-            <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
-
             <conv:UsageHeatToBrushConverter
                 x:Key="HeatBrush"
                 LowBrush="{ThemeResource TextFillColorSecondaryBrush}"

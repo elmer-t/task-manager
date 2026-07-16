@@ -42,6 +42,11 @@ public sealed partial class MainWindow : Window, IEndTaskInteraction
 
     public MainViewModel ViewModel { get; }
 
+    // x:Bind function binding: converters resolved via StaticResource don't work in a
+    // Window-rooted x:Bind (the generated lookup needs a FrameworkElement root).
+    internal Visibility BoolToVisibility(bool value) =>
+        value ? Visibility.Visible : Visibility.Collapsed;
+
     private async void OnClosed(object sender, WindowEventArgs args)
     {
         await _engine.DisposeAsync();

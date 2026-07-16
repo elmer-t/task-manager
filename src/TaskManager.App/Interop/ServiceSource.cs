@@ -21,9 +21,9 @@ internal sealed class ServiceSource : IServiceSource
     // Descriptions are static; cache by service key so we query each at most once.
     private readonly Dictionary<string, string?> _descriptionCache = new(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlyList<ServiceSample> Sample()
+    public unsafe IReadOnlyList<ServiceSample> Sample()
     {
-        using var scm = PInvoke.OpenSCManagerW(
+        using var scm = PInvoke.OpenSCManager(
             lpMachineName: (string?)null,
             lpDatabaseName: (string?)null,
             dwDesiredAccess: PInvoke.SC_MANAGER_ENUMERATE_SERVICE);
@@ -39,16 +39,16 @@ internal sealed class ServiceSource : IServiceSource
 
         while (true)
         {
-            bool ok = PInvoke.EnumServicesStatusExW(
+            bool ok = PInvoke.EnumServicesStatusEx(
                 scm,
                 SC_ENUM_TYPE.SC_ENUM_PROCESS_INFO,
                 ENUM_SERVICE_TYPE.SERVICE_WIN32,
-                SERVICE_ENUM_STATE.SERVICE_STATE_ALL,
+                ENUM_SERVICE_STATE.SERVICE_STATE_ALL,
                 buffer,
                 out uint bytesNeeded,
                 out uint servicesReturned,
-                ref resumeHandle,
-                lpGroupName: null);
+                &resumeHandle,
+                pszGroupName: null!);
 
             if (ok)
             {
@@ -116,21 +116,21 @@ internal sealed class ServiceSource : IServiceSource
 
     private static unsafe string? ReadDescription(SafeHandle scm, string serviceName)
     {
-        using var service = PInvoke.OpenServiceW(scm, serviceName, PInvoke.SERVICE_QUERY_CONFIG);
+        using var service = PInvoke.OpenService(scm, serviceName, PInvoke.SERVICE_QUERY_CONFIG);
         if (service.IsInvalid)
         {
             return null; // Blank Description cell; the row still appears (spec §4).
         }
 
         // Probe for the required size, then read the SERVICE_DESCRIPTIONW blob.
-        PInvoke.QueryServiceConfig2W(service, PInvoke.SERVICE_CONFIG_DESCRIPTION, Span<byte>.Empty, out uint needed);
+        PInvoke.QueryServiceConfig2W(service, SERVICE_CONFIG.SERVICE_CONFIG_DESCRIPTION, Span<byte>.Empty, out uint needed);
         if (needed == 0)
         {
             return null;
         }
 
         byte[] buffer = new byte[needed];
-        if (!PInvoke.QueryServiceConfig2W(service, PInvoke.SERVICE_CONFIG_DESCRIPTION, buffer, out _))
+        if (!PInvoke.QueryServiceConfig2W(service, SERVICE_CONFIG.SERVICE_CONFIG_DESCRIPTION, buffer, out _))
         {
             return null;
         }

@@ -150,7 +150,7 @@
                 <Button
                     HorizontalAlignment="Right"
                     Command="{x:Bind ViewModel.EndTaskCommand}"
-                    Visibility="{x:Bind ViewModel.IsProcessView, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    Visibility="{x:Bind BoolToVisibility(ViewModel.IsProcessView), Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontSize="14" Glyph="&#xE711;" />
                         <TextBlock Text="End task" />
@@ -162,7 +162,7 @@
             <Grid Grid.Row="2">
 
                 <!-- Process list (Apps / Background) -->
-                <Grid Visibility="{x:Bind ViewModel.IsProcessView, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                <Grid Visibility="{x:Bind BoolToVisibility(ViewModel.IsProcessView), Mode=OneWay}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
@@ -219,13 +219,13 @@
                                         VerticalAlignment="Center"
                                         TextAlignment="Right"
                                         Text="{x:Bind CpuText, Mode=OneWay}"
-                                        Foreground="{x:Bind CpuHeat, Mode=OneWay, Converter={StaticResource HeatBrush}}" />
+                                        Foreground="{Binding CpuHeat, Converter={StaticResource HeatBrush}}" />
                                     <TextBlock
                                         Grid.Column="2"
                                         VerticalAlignment="Center"
                                         TextAlignment="Right"
                                         Text="{x:Bind MemoryText, Mode=OneWay}"
-                                        Foreground="{x:Bind MemoryHeat, Mode=OneWay, Converter={StaticResource HeatBrush}}" />
+                                        Foreground="{Binding MemoryHeat, Converter={StaticResource HeatBrush}}" />
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
@@ -233,7 +233,7 @@
                 </Grid>
 
                 <!-- Services list (view-only) -->
-                <Grid Visibility="{x:Bind ViewModel.IsServicesView, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                <Grid Visibility="{x:Bind BoolToVisibility(ViewModel.IsServicesView), Mode=OneWay}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
@@ -285,11 +285,11 @@
                                         HorizontalAlignment="Right"
                                         Padding="10,2"
                                         CornerRadius="10"
-                                        Background="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource PillBackground}}">
+                                        Background="{Binding IsRunning, Converter={StaticResource PillBackground}}">
                                         <TextBlock
                                             FontSize="12"
                                             Text="{x:Bind StatusText, Mode=OneWay}"
-                                            Foreground="{x:Bind IsRunning, Mode=OneWay, Converter={StaticResource PillForeground}}" />
+                                            Foreground="{Binding IsRunning, Converter={StaticResource PillForeground}}" />
                                     </Border>
                                 </Grid>
                             </DataTemplate>

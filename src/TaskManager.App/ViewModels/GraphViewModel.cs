@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LiveChartsCore;
+using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
@@ -40,17 +41,17 @@ public sealed partial class GraphViewModel : ObservableObject
             },
         };
 
-        XAxes = new[] { HiddenAxis(0, MonitorConstants.HistoryLength - 1) };
-        YAxes = new[] { HiddenAxis(0, yMax) };
+        XAxes = new ICartesianAxis[] { HiddenAxis(0, MonitorConstants.HistoryLength - 1) };
+        YAxes = new ICartesianAxis[] { HiddenAxis(0, yMax) };
     }
 
     public string Title { get; }
 
     public ISeries[] Series { get; }
 
-    public Axis[] XAxes { get; }
+    public ICartesianAxis[] XAxes { get; }
 
-    public Axis[] YAxes { get; }
+    public ICartesianAxis[] YAxes { get; }
 
     /// <summary>Big value shown top-right of the card, e.g. "21%" or "12.4 GB".</summary>
     [ObservableProperty]
