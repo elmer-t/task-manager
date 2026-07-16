@@ -191,13 +191,18 @@
                                         Orientation="Horizontal"
                                         Spacing="10"
                                         VerticalAlignment="Center">
-                                        <!-- Icon + label (spec §6). The placeholder tile shows
-                                             through until/unless a real icon resolves, so an
-                                             unreadable image path degrades gracefully (spec §4). -->
+                                        <!-- Icon + label (spec §6). A generic app icon (tile +
+                                             glyph) shows until/unless the real icon resolves, so
+                                             a process whose image path can't be read degrades to
+                                             a generic icon rather than erroring (spec §4). -->
                                         <Grid Width="16" Height="16" VerticalAlignment="Center">
                                             <Border
                                                 Background="{ThemeResource ControlFillColorSecondaryBrush}"
                                                 CornerRadius="3" />
+                                            <FontIcon
+                                                FontSize="11"
+                                                Glyph="&#xECAA;"
+                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                             <Image
                                                 Width="16"
                                                 Height="16"

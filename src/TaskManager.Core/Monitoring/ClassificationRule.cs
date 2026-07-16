@@ -27,6 +27,13 @@ public static class ClassificationRule
     /// multi-window process to a single App row); otherwise
     /// <see cref="ProcessKind.Background"/> — including a process that owns no windows.
     /// </summary>
+    /// <remarks>
+    /// The production hot path inlines <see cref="IsQualifyingWindow"/> per window in
+    /// <c>WindowClassifier</c> rather than calling this, so this method is exercised only by
+    /// tests. It is retained deliberately as the pure, platform-neutral statement of the §7
+    /// "at least one qualifying window" aggregation rule — the piece that can't be unit-tested
+    /// through the Win32-bound classifier.
+    /// </remarks>
     public static ProcessKind Classify(IEnumerable<WindowAttributes> ownedWindows)
     {
         foreach (var window in ownedWindows)
