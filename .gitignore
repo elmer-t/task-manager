@@ -16,6 +16,20 @@ build/
 .DS_Store
 Thumbs.db
 
+# .NET / Visual Studio build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+.vs/
+*.user
+*.suo
+# CsWin32 generated sources (regenerated at build)
+**/obj/**/*.g.cs
+# NuGet
+*.nupkg
+packages/
+
 # Local agent files
 .claude/settings.local.json
 .claude/skills/

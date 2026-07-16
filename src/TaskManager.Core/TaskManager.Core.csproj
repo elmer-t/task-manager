@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    TaskManager.Core: platform-neutral logic and contracts.
+
+    Deliberately net8.0 (NOT -windows) and UI-free so the classification rule
+    (spec §7), CPU%/memory math, the rolling 60 s buffer, and number formatting
+    can be unit-tested on any host without a WinUI or Win32 dependency. All Win32
+    access is behind the interfaces here; implementations live in TaskManager.App.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>TaskManager.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>
