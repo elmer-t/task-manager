@@ -38,8 +38,8 @@ internal sealed class ProcessSource : IProcessSource
         {
             alive.Add(processId);
             ProcessKind kind = appProcessIds.Contains(processId) ? ProcessKind.App : ProcessKind.Background;
-            (double? cpu, ulong? memory) = SampleProcessMetrics(processId, systemDelta);
-            samples.Add(new ProcessSample((int)processId, name, kind, cpu, memory));
+            (double? cpu, ulong? memory, string? path) = SampleProcessMetrics(processId, systemDelta);
+            samples.Add(new ProcessSample((int)processId, name, kind, cpu, memory, path));
         }
 
         PruneDeadProcesses(alive);
@@ -67,7 +67,7 @@ internal sealed class ProcessSource : IProcessSource
         return delta;
     }
 
-    private (double? cpu, ulong? memory) SampleProcessMetrics(uint processId, ulong systemDelta)
+    private (double? cpu, ulong? memory, string? path) SampleProcessMetrics(uint processId, ulong systemDelta)
     {
         using var handle = PInvoke.OpenProcess_SafeHandle(
             PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION,
@@ -76,13 +76,39 @@ internal sealed class ProcessSource : IProcessSource
 
         if (handle.IsInvalid)
         {
-            // Elevation-gated (spec §4): keep the row, blank its metric cells.
-            return (null, null);
+            // Elevation-gated (spec §4): keep the row, blank its metric cells and let the
+            // icon fall back to the generic placeholder (no path available).
+            return (null, null, null);
         }
 
         double? cpu = SampleCpuPercent(handle, processId, systemDelta);
         ulong? memory = SamplePrivateWorkingSet(handle);
-        return (cpu, memory);
+        string? path = QueryImagePath(handle);
+        return (cpu, memory, path);
+    }
+
+    /// <summary>
+    /// The full Win32 path to the process image (spec §6 icon source). Uses
+    /// PROCESS_QUERY_LIMITED_INFORMATION — the handle we already hold — so it needs no extra
+    /// rights. A path that doesn't fit MAX_PATH or can't be read yields <see langword="null"/>
+    /// → the row's generic placeholder icon (spec §4 degradation).
+    /// </summary>
+    private static unsafe string? QueryImagePath(SafeHandle handle)
+    {
+        const int capacity = 260; // MAX_PATH
+        char* buffer = stackalloc char[capacity];
+        uint size = capacity;
+
+        if (!PInvoke.QueryFullProcessImageName(
+                handle,
+                PROCESS_NAME_FORMAT.PROCESS_NAME_WIN32,
+                new PWSTR(buffer),
+                ref size))
+        {
+            return null;
+        }
+
+        return size > 0 ? new string(buffer, 0, (int)size) : null;
     }
 
     private double? SampleCpuPercent(SafeHandle handle, uint processId, ulong systemDelta)

@@ -93,11 +93,10 @@ internal sealed class ServiceSource : IServiceSource
                 ServiceStatus runState = status.dwCurrentState == SERVICE_STATUS_CURRENT_STATE.SERVICE_RUNNING
                     ? ServiceStatus.Running
                     : ServiceStatus.Stopped;
-                int? hostPid = status.dwProcessId != 0 ? (int)status.dwProcessId : null;
 
                 string? description = GetDescription(scm, serviceName);
 
-                results.Add(new ServiceSample(serviceName, displayName, description, runState, hostPid));
+                results.Add(new ServiceSample(serviceName, displayName, description, runState));
             }
         }
     }

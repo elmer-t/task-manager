@@ -12,12 +12,8 @@ namespace TaskManager.Core.Models;
 /// (blank Description cell — the row still appears).
 /// </param>
 /// <param name="Status">Running / Stopped pill state (spec §6).</param>
-/// <param name="HostProcessId">
-/// PID hosting the service, or <see langword="null"/> when not running / unknown.
-/// </param>
 public sealed record ServiceSample(
     string ServiceName,
     string DisplayName,
     string? Description,
-    ServiceStatus Status,
-    int? HostProcessId);
+    ServiceStatus Status);

@@ -10,6 +10,14 @@ namespace TaskManager.Core.Models;
 /// <param name="MemoryTotalBytes">Total physical memory.</param>
 /// <param name="CommitUsedBytes">Commit charge in use (GetPerformanceInfo).</param>
 /// <param name="CommitLimitBytes">Commit limit.</param>
+/// <remarks>
+/// Commit charge (<see cref="CommitUsedBytes"/> / <see cref="CommitLimitBytes"/>) is sampled
+/// but not yet surfaced — the memory card shows only physical memory today. It is retained
+/// deliberately (rather than deleted per the #15 cleanup) as the foundation for a near-term
+/// commit line on the memory card; deleting it would also drop the §9-checklist
+/// <c>GetPerformanceInfo</c> binding. Wire it into a UI surface or revisit if that surface
+/// doesn't land.
+/// </remarks>
 public sealed record SystemSample(
     double CpuPercent,
     ulong MemoryUsedBytes,

@@ -40,6 +40,53 @@
         </NavigationView.MenuItems>
 
         <Grid Padding="20,12,20,16" RowSpacing="14">
+            <Grid.Resources>
+                <!--
+                    One graph card, instantiated twice in the strip (CPU + Memory). Bound to a
+                    GraphViewModel so the two cards differ only by the view model they carry.
+                -->
+                <DataTemplate x:Key="GraphCardTemplate" x:DataType="vm:GraphViewModel">
+                    <Border
+                        Padding="14,12"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                        <Grid RowSpacing="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <TextBlock
+                                    Text="{x:Bind Title}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock
+                                    HorizontalAlignment="Right"
+                                    Style="{ThemeResource SubtitleTextBlockStyle}"
+                                    Text="{x:Bind ValueText, Mode=OneWay}" />
+                            </Grid>
+                            <TextBlock
+                                Grid.Row="1"
+                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                Text="{x:Bind CaptionText, Mode=OneWay}" />
+                            <lvc:CartesianChart
+                                Grid.Row="2"
+                                Height="88"
+                                Margin="0,6,0,0"
+                                Series="{x:Bind Series}"
+                                XAxes="{x:Bind XAxes}"
+                                YAxes="{x:Bind YAxes}"
+                                TooltipPosition="Hidden"
+                                LegendPosition="Hidden"
+                                IsHitTestVisible="False" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </Grid.Resources>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <!-- graph strip: PINNED -->
@@ -56,89 +103,19 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- CPU card -->
-                <Border
+                <ContentControl
                     Grid.Column="0"
-                    Padding="14,12"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="8">
-                    <Grid RowSpacing="2">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid Grid.Row="0">
-                            <TextBlock
-                                Text="{x:Bind ViewModel.GraphStrip.Cpu.Title}"
-                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            <TextBlock
-                                HorizontalAlignment="Right"
-                                Style="{ThemeResource SubtitleTextBlockStyle}"
-                                Text="{x:Bind ViewModel.GraphStrip.Cpu.ValueText, Mode=OneWay}" />
-                        </Grid>
-                        <TextBlock
-                            Grid.Row="1"
-                            Style="{ThemeResource CaptionTextBlockStyle}"
-                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                            Text="{x:Bind ViewModel.GraphStrip.Cpu.CaptionText, Mode=OneWay}" />
-                        <lvc:CartesianChart
-                            Grid.Row="2"
-                            Height="88"
-                            Margin="0,6,0,0"
-                            Series="{x:Bind ViewModel.GraphStrip.Cpu.Series}"
-                            XAxes="{x:Bind ViewModel.GraphStrip.Cpu.XAxes}"
-                            YAxes="{x:Bind ViewModel.GraphStrip.Cpu.YAxes}"
-                            TooltipPosition="Hidden"
-                            LegendPosition="Hidden"
-                            IsHitTestVisible="False" />
-                    </Grid>
-                </Border>
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Content="{x:Bind ViewModel.GraphStrip.Cpu}"
+                    ContentTemplate="{StaticResource GraphCardTemplate}" />
 
-                <!-- Memory card -->
-                <Border
+                <ContentControl
                     Grid.Column="1"
-                    Padding="14,12"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="8">
-                    <Grid RowSpacing="2">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid Grid.Row="0">
-                            <TextBlock
-                                Text="{x:Bind ViewModel.GraphStrip.Memory.Title}"
-                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            <TextBlock
-                                HorizontalAlignment="Right"
-                                Style="{ThemeResource SubtitleTextBlockStyle}"
-                                Text="{x:Bind ViewModel.GraphStrip.Memory.ValueText, Mode=OneWay}" />
-                        </Grid>
-                        <TextBlock
-                            Grid.Row="1"
-                            Style="{ThemeResource CaptionTextBlockStyle}"
-                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                            Text="{x:Bind ViewModel.GraphStrip.Memory.CaptionText, Mode=OneWay}" />
-                        <lvc:CartesianChart
-                            Grid.Row="2"
-                            Height="88"
-                            Margin="0,6,0,0"
-                            Series="{x:Bind ViewModel.GraphStrip.Memory.Series}"
-                            XAxes="{x:Bind ViewModel.GraphStrip.Memory.XAxes}"
-                            YAxes="{x:Bind ViewModel.GraphStrip.Memory.YAxes}"
-                            TooltipPosition="Hidden"
-                            LegendPosition="Hidden"
-                            IsHitTestVisible="False" />
-                    </Grid>
-                </Border>
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Content="{x:Bind ViewModel.GraphStrip.Memory}"
+                    ContentTemplate="{StaticResource GraphCardTemplate}" />
             </Grid>
 
             <!-- ============ Toolbar: header + End task ============ -->
@@ -209,21 +186,45 @@
                                         <ColumnDefinition Width="90" />
                                         <ColumnDefinition Width="110" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock
+                                    <StackPanel
                                         Grid.Column="0"
-                                        VerticalAlignment="Center"
-                                        Text="{x:Bind Name, Mode=OneWay}"
-                                        TextTrimming="CharacterEllipsis" />
+                                        Orientation="Horizontal"
+                                        Spacing="10"
+                                        VerticalAlignment="Center">
+                                        <!-- Icon + label (spec §6). A generic app icon (tile +
+                                             glyph) shows until/unless the real icon resolves, so
+                                             a process whose image path can't be read degrades to
+                                             a generic icon rather than erroring (spec §4). -->
+                                        <Grid Width="16" Height="16" VerticalAlignment="Center">
+                                            <Border
+                                                Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                                CornerRadius="3" />
+                                            <FontIcon
+                                                FontSize="11"
+                                                Glyph="&#xECAA;"
+                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            <Image
+                                                Width="16"
+                                                Height="16"
+                                                Source="{x:Bind IconSource, Mode=OneWay}" />
+                                        </Grid>
+                                        <TextBlock
+                                            VerticalAlignment="Center"
+                                            Text="{x:Bind Name, Mode=OneWay}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
                                     <TextBlock
                                         Grid.Column="1"
                                         VerticalAlignment="Center"
                                         TextAlignment="Right"
+                                        FontFamily="{StaticResource TabularNumericFontFamily}"
                                         Text="{x:Bind CpuText, Mode=OneWay}"
                                         Foreground="{Binding CpuHeat, Converter={StaticResource HeatBrush}}" />
                                     <TextBlock
                                         Grid.Column="2"
                                         VerticalAlignment="Center"
                                         TextAlignment="Right"
+                                        FontFamily="{StaticResource TabularNumericFontFamily}"
                                         Text="{x:Bind MemoryText, Mode=OneWay}"
                                         Foreground="{Binding MemoryHeat, Converter={StaticResource HeatBrush}}" />
                                 </Grid>

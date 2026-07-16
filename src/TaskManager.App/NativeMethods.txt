@@ -9,12 +9,13 @@ Process32NextW
 PROCESSENTRY32W
 CREATE_TOOLHELP_SNAPSHOT_FLAGS
 
-// --- Per-process handles: CPU %, memory, terminate ---
+// --- Per-process handles: CPU %, memory, image path, terminate ---
 OpenProcess
 CloseHandle
 GetProcessTimes
 GetProcessMemoryInfo
 PROCESS_MEMORY_COUNTERS_EX2
+QueryFullProcessImageName
 TerminateProcess
 PROCESS_ACCESS_RIGHTS
 WIN32_ERROR

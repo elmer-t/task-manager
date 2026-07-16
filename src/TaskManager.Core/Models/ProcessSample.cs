@@ -16,13 +16,15 @@ namespace TaskManager.Core.Models;
 /// <param name="PrivateWorkingSetBytes">
 /// Private Working Set (spec §4 / CONTEXT.md), or <see langword="null"/> when inaccessible.
 /// </param>
+/// <param name="ImagePath">
+/// Full path to the process executable (used to render the row's icon, spec §6), or
+/// <see langword="null"/> when the process handle could not be opened — in which case the
+/// row shows the generic placeholder icon rather than erroring (spec §4).
+/// </param>
 public sealed record ProcessSample(
     int ProcessId,
     string Name,
     ProcessKind Kind,
     double? CpuPercent,
-    ulong? PrivateWorkingSetBytes)
-{
-    /// <summary>True when this row's CPU and memory cells have real values to show.</summary>
-    public bool MetricsAvailable => CpuPercent is not null && PrivateWorkingSetBytes is not null;
-}
+    ulong? PrivateWorkingSetBytes,
+    string? ImagePath);
