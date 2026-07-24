@@ -7,36 +7,36 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace TaskManager.App.Interop;
 
 /// <summary>
-/// Implements the Win32 half of the App/Background classifier (spec §7): enumerate every
-/// top-level window once per tick, read the four attributes the rule needs, and collect
-/// the PIDs that own at least one qualifying window. The <em>decision</em> is delegated to
-/// <see cref="ClassificationRule"/> so it stays pure and tested; this file only reads Win32.
+/// The Win32 half of the App/Background classifier (spec §7): enumerate every top-level
+/// window once per tick, read the four attributes, and hand the owning PID of each
+/// <b>qualifying window</b> to <see cref="ClassificationRule"/>. Both halves of the
+/// decision — the per-window predicate and the "at least one" aggregation — belong to that
+/// pure rule; this file only reads Win32 and reports what it saw.
 /// </summary>
 internal sealed class WindowClassifier
 {
     private const uint WsExToolWindow = 0x00000080; // WS_EX_TOOLWINDOW
 
     // Reused across ticks to avoid per-tick allocation churn on the hot path (spec §5).
-    private readonly HashSet<uint> _appProcessIds = new();
+    private readonly List<uint> _qualifyingWindowOwners = new();
 
     /// <summary>
-    /// Returns the set of PIDs classified as <b>App</b> this tick. A PID absent from the
-    /// set is a <b>Background process</b> (spec §7). EnumWindows enumerates only top-level
-    /// windows, which is exactly the scope the rule is defined over.
+    /// Returns this tick's §7 verdict for every process. EnumWindows enumerates only
+    /// top-level windows, which is exactly the scope the rule is defined over.
     /// </summary>
-    public IReadOnlySet<uint> CollectAppProcessIds()
+    public ProcessClassification ClassifyProcesses()
     {
-        _appProcessIds.Clear();
+        _qualifyingWindowOwners.Clear();
 
         PInvoke.EnumWindows(EnumWindow, lParam: default);
-        return _appProcessIds;
+        return ClassificationRule.Classify(_qualifyingWindowOwners);
     }
 
     private BOOL EnumWindow(HWND hwnd, LPARAM _)
     {
         if (IsQualifyingWindow(hwnd, out uint processId))
         {
-            _appProcessIds.Add(processId);
+            _qualifyingWindowOwners.Add(processId);
         }
 
         return true; // keep enumerating
@@ -60,6 +60,10 @@ internal sealed class WindowClassifier
         uint owningProcessId = 0;
         _ = PInvoke.GetWindowThreadProcessId(hwnd, &owningProcessId);
         processId = owningProcessId;
+
+        // A PID left at 0 means the owner query failed — the window died mid-enumeration.
+        // Drop it: a read failure is not a §7 clause, and PID 0 is the Idle Process, which
+        // a toolhelp snapshot does list and which must never surface in the Apps view.
         return processId != 0;
     }
 

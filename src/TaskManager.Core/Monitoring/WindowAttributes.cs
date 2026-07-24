@@ -1,11 +1,12 @@
 namespace TaskManager.Core.Monitoring;
 
 /// <summary>
-/// The four properties of a single top-level window that decide whether it counts
-/// toward classifying its owning process as an <b>App</b> (spec §7). Reading these from
-/// Win32 (IsWindowVisible, WS_EX_TOOLWINDOW, GetWindow(GW_OWNER), DWMWA_CLOAKED) is the
-/// App project's job; the <em>decision</em> is the pure rule in
-/// <see cref="ClassificationRule"/> so it can be tested without Win32.
+/// The four properties of a single top-level window that decide whether it is a
+/// <b>qualifying window</b>, and so counts toward classifying its owning process as an
+/// <b>App</b> (spec §7). Reading these from Win32 (IsWindowVisible, WS_EX_TOOLWINDOW,
+/// GetWindow(GW_OWNER), DWMWA_CLOAKED) is the App project's job; both the predicate and
+/// the aggregation it feeds are the pure rule in <see cref="ClassificationRule"/>, so
+/// production and tests cross the same seam.
 /// </summary>
 /// <param name="IsVisible">Result of IsWindowVisible.</param>
 /// <param name="IsToolWindow">Has the WS_EX_TOOLWINDOW extended style.</param>

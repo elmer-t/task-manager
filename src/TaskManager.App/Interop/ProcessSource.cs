@@ -28,7 +28,7 @@ internal sealed class ProcessSource : IProcessSource
 
     public IReadOnlyList<ProcessSample> Sample()
     {
-        IReadOnlySet<uint> appProcessIds = _classifier.CollectAppProcessIds();
+        ProcessClassification classification = _classifier.ClassifyProcesses();
         ulong systemDelta = SampleSystemTotalDelta();
 
         var samples = new List<ProcessSample>();
@@ -37,9 +37,9 @@ internal sealed class ProcessSource : IProcessSource
         foreach ((uint processId, string name) in EnumerateProcesses())
         {
             alive.Add(processId);
-            ProcessKind kind = appProcessIds.Contains(processId) ? ProcessKind.App : ProcessKind.Background;
             (double? cpu, ulong? memory, string? path) = SampleProcessMetrics(processId, systemDelta);
-            samples.Add(new ProcessSample((int)processId, name, kind, cpu, memory, path));
+            samples.Add(new ProcessSample(
+                (int)processId, name, classification.Kind(processId), cpu, memory, path));
         }
 
         PruneDeadProcesses(alive);
