@@ -16,51 +16,37 @@ namespace TaskManager.App.Interop;
 /// </summary>
 internal sealed class SystemMetricsSource : ISystemMetricsSource
 {
-    private bool _hasPrevious;
-    private ulong _previousIdle;
-    private ulong _previousKernel;
-    private ulong _previousUser;
+    // The one machine-wide CPU reading in the tree: it yields both the graph card's busy
+    // percentage and the CPU denominator the process source divides by. The delta
+    // arithmetic lives in SystemCpuInterval, so this field is the only state kept here.
+    private SystemCpuInterval? _cpu;
 
     public SystemSample Sample()
     {
-        double cpuPercent = SampleCpuPercent();
+        SystemCpuInterval cpu = SampleCpu();
         (ulong memoryUsed, ulong memoryTotal) = SamplePhysicalMemory();
         (ulong commitUsed, ulong commitLimit) = SampleCommitCharge();
-        return new SystemSample(cpuPercent, memoryUsed, memoryTotal, commitUsed, commitLimit);
+        return new SystemSample(
+            cpu.BusyPercent, memoryUsed, memoryTotal, commitUsed, commitLimit, cpu.CpuDenominator);
     }
 
-    private unsafe double SampleCpuPercent()
+    private unsafe SystemCpuInterval SampleCpu()
     {
         FILETIME idle, kernel, user;
         if (!PInvoke.GetSystemTimes(&idle, &kernel, &user))
         {
-            return 0.0;
+            // A failed read measures nothing: 0 % on the card, a 0 denominator so every row
+            // reads 0 %. The baseline is left alone, so the next successful read measures
+            // across the gap rather than restarting.
+            return default;
         }
 
-        ulong idleTicks = idle.ToUInt64();
-        ulong kernelTicks = kernel.ToUInt64();
-        ulong userTicks = user.ToUInt64();
+        SystemCpuInterval reading = _cpu is { } previous
+            ? previous.Next(idle.ToUInt64(), kernel.ToUInt64(), user.ToUInt64())
+            : SystemCpuInterval.Start(idle.ToUInt64(), kernel.ToUInt64(), user.ToUInt64());
 
-        if (!_hasPrevious)
-        {
-            Remember(idleTicks, kernelTicks, userTicks);
-            return 0.0; // First reading has no interval to compare against.
-        }
-
-        ulong idleDelta = CpuMath.Delta(_previousIdle, idleTicks);
-        ulong kernelDelta = CpuMath.Delta(_previousKernel, kernelTicks);
-        ulong userDelta = CpuMath.Delta(_previousUser, userTicks);
-        Remember(idleTicks, kernelTicks, userTicks);
-
-        return CpuMath.SystemBusyPercent(idleDelta, kernelDelta, userDelta);
-    }
-
-    private void Remember(ulong idle, ulong kernel, ulong user)
-    {
-        _previousIdle = idle;
-        _previousKernel = kernel;
-        _previousUser = user;
-        _hasPrevious = true;
+        _cpu = reading;
+        return reading;
     }
 
     private static (ulong used, ulong total) SamplePhysicalMemory()

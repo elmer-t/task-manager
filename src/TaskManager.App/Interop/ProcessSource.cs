@@ -23,13 +23,9 @@ internal sealed class ProcessSource : IProcessSource
     private readonly WindowClassifier _classifier = new();
     private readonly Dictionary<uint, ProcessCpuState> _previous = new();
 
-    private bool _hasSystemPrevious;
-    private ulong _previousSystemTotal;
-
-    public IReadOnlyList<ProcessSample> Sample()
+    public IReadOnlyList<ProcessSample> Sample(ulong cpuDenominator)
     {
         ProcessClassification classification = _classifier.ClassifyProcesses();
-        ulong systemDelta = SampleSystemTotalDelta();
 
         var samples = new List<ProcessSample>();
         var alive = new HashSet<uint>();
@@ -37,7 +33,7 @@ internal sealed class ProcessSource : IProcessSource
         foreach ((uint processId, string name) in EnumerateProcesses())
         {
             alive.Add(processId);
-            (double? cpu, ulong? memory, string? path) = SampleProcessMetrics(processId, systemDelta);
+            (double? cpu, ulong? memory, string? path) = SampleProcessMetrics(processId, cpuDenominator);
             samples.Add(new ProcessSample(
                 (int)processId, name, classification.Kind(processId), cpu, memory, path));
         }
@@ -46,28 +42,7 @@ internal sealed class ProcessSource : IProcessSource
         return samples;
     }
 
-    /// <summary>
-    /// Reads the machine-wide kernel+user CPU delta that is the denominator for every
-    /// process's CPU share this tick. Kept here (not shared with the graph's metrics
-    /// source) so the two stateful samplers stay independent; the extra GetSystemTimes
-    /// call is negligible (spec §5).
-    /// </summary>
-    private unsafe ulong SampleSystemTotalDelta()
-    {
-        FILETIME kernel, user;
-        if (!PInvoke.GetSystemTimes(null, &kernel, &user))
-        {
-            return 0;
-        }
-
-        ulong total = kernel.ToUInt64() + user.ToUInt64();
-        ulong delta = _hasSystemPrevious ? CpuMath.Delta(_previousSystemTotal, total) : 0;
-        _previousSystemTotal = total;
-        _hasSystemPrevious = true;
-        return delta;
-    }
-
-    private (double? cpu, ulong? memory, string? path) SampleProcessMetrics(uint processId, ulong systemDelta)
+    private (double? cpu, ulong? memory, string? path) SampleProcessMetrics(uint processId, ulong cpuDenominator)
     {
         using var handle = PInvoke.OpenProcess_SafeHandle(
             PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_LIMITED_INFORMATION,
@@ -81,7 +56,7 @@ internal sealed class ProcessSource : IProcessSource
             return (null, null, null);
         }
 
-        double? cpu = SampleCpuPercent(handle, processId, systemDelta);
+        double? cpu = SampleCpuPercent(handle, processId, cpuDenominator);
         ulong? memory = SamplePrivateWorkingSet(handle);
         string? path = QueryImagePath(handle);
         return (cpu, memory, path);
@@ -111,7 +86,7 @@ internal sealed class ProcessSource : IProcessSource
         return size > 0 ? new string(buffer, 0, (int)size) : null;
     }
 
-    private double? SampleCpuPercent(SafeHandle handle, uint processId, ulong systemDelta)
+    private double? SampleCpuPercent(SafeHandle handle, uint processId, ulong cpuDenominator)
     {
         if (!PInvoke.GetProcessTimes(handle, out FILETIME creation, out _, out FILETIME kernel, out FILETIME user))
         {
@@ -126,9 +101,9 @@ internal sealed class ProcessSource : IProcessSource
         double percent = 0.0;
         if (_previous.TryGetValue(processId, out ProcessCpuState prior) &&
             prior.CreatedAt == createdAt &&
-            systemDelta > 0)
+            cpuDenominator > 0)
         {
-            percent = CpuMath.ProcessPercent(CpuMath.Delta(prior.Busy, busy), systemDelta);
+            percent = CpuMath.ProcessPercent(CpuMath.Delta(prior.Busy, busy), cpuDenominator);
         }
 
         _previous[processId] = new ProcessCpuState(createdAt, busy);

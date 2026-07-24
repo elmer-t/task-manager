@@ -14,5 +14,11 @@ public interface IProcessSource
     /// Samples every process. The list is always complete (toolhelp needs no handles);
     /// rows the caller cannot open carry <see langword="null"/> metrics (spec §4).
     /// </summary>
-    IReadOnlyList<ProcessSample> Sample();
+    /// <param name="cpuDenominator">
+    /// This tick's <b>CPU denominator</b> (CONTEXT.md) — the machine-wide kernel+user delta
+    /// each row's CPU % is a share of, taken from the same reading that produced the graph
+    /// card's figure. <c>0</c> means there is no interval yet (first tick), so every row
+    /// reads 0 %.
+    /// </param>
+    IReadOnlyList<ProcessSample> Sample(ulong cpuDenominator);
 }
