@@ -39,6 +39,11 @@ is the glossary that spec and its implementation share.
   deltas. For a process row: that process's share from `GetProcessTimes` deltas over the
   same 1 Hz interval.
 
+- **CPU denominator** — the machine-wide kernel+user CPU-time delta measured over one
+  **Tick**: the divisor a process row's **CPU %** is a share of. One reading per Tick serves
+  both consumers — the graph strip's CPU card and every process row — so the CPU % column
+  and the CPU graph agree by construction rather than by coincidence of arithmetic (#24).
+
 - **Memory** — for a process row, the **Private Working Set**
   (`PROCESS_MEMORY_COUNTERS_EX2.PrivateWorkingSetSize`), matching Windows Task Manager's
   Memory column. For the system graph, physical memory in use via `GlobalMemoryStatusEx`
