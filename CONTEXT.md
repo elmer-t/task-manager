@@ -10,9 +10,13 @@ is the glossary that spec and its implementation share.
 ## Glossary
 
 - **App** — a process the user thinks of as a foreground application. Operationally: a
-  process owning at least one top-level window that is visible, not a tool window
-  (`WS_EX_TOOLWINDOW`), unowned, and not DWM-cloaked. Shown in the **Apps** view. See
+  process owning at least one **qualifying window**. Shown in the **Apps** view. See
   spec §7.
+
+- **Qualifying window** — a top-level window that is *all* of: visible, not a tool
+  window (`WS_EX_TOOLWINDOW`), unowned (no `GetWindow(GW_OWNER)`), and not DWM-cloaked
+  (`DWMWA_CLOAKED`). Owning at least one is exactly what makes a process an **App**
+  (spec §7); "top-level" is the broader set the rule is evaluated over.
 
 - **Background process** — any process that is not an **App** by the rule above
   (services' host processes, helpers, tray-only apps, suspended/cloaked packaged apps).
