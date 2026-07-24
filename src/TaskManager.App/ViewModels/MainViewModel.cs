@@ -4,30 +4,25 @@ using CommunityToolkit.Mvvm.Input;
 using TaskManager.Core.Abstractions;
 using TaskManager.Core.Collections;
 using TaskManager.Core.Models;
+using TaskManager.Core.Monitoring;
 using TaskManager.Core.Presentation;
 
 namespace TaskManager.App.ViewModels;
 
 /// <summary>
 /// The window's root view model. Owns the three lists and the pinned graph strip, applies
-/// each tick's snapshot by in-place reconciliation, and drives the End task flow (spec §8).
+/// each tick's snapshot by in-place reconciliation, and owns the <em>selection</em> the End
+/// task flow (spec §8) acts on — the flow's ordering itself belongs to
+/// <see cref="EndTaskFlow"/>.
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
-    private readonly IProcessTerminator _terminator;
-    private readonly IElevationService _elevation;
-    private readonly IEndTaskInteraction _interaction;
+    private readonly EndTaskFlow _endTask;
     private readonly IProcessIconResolver _iconResolver;
 
-    public MainViewModel(
-        IProcessTerminator terminator,
-        IElevationService elevation,
-        IEndTaskInteraction interaction,
-        IProcessIconResolver iconResolver)
+    public MainViewModel(EndTaskFlow endTask, IProcessIconResolver iconResolver)
     {
-        _terminator = terminator;
-        _elevation = elevation;
-        _interaction = interaction;
+        _endTask = endTask;
         _iconResolver = iconResolver;
     }
 
@@ -111,33 +106,13 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        // Unconditional confirm first (spec §8).
-        if (!await _interaction.ConfirmEndTaskAsync(target.Name))
+        TerminationOutcome? outcome = await _endTask.EndAsync(target.ProcessId, target.Name);
+
+        // The process is gone either way, so the selection goes with it; every other
+        // outcome (declined confirm included) leaves the row selected to try again.
+        if (outcome is TerminationOutcome.Success or TerminationOutcome.NotFound)
         {
-            return;
-        }
-
-        TerminationOutcome outcome = _terminator.Terminate(target.ProcessId);
-        switch (outcome)
-        {
-            case TerminationOutcome.Success:
-            case TerminationOutcome.NotFound:
-                // The row disappears on the next tick.
-                SelectedProcess = null;
-                break;
-
-            case TerminationOutcome.AccessDenied:
-                // Surface the elevate affordance — never pre-disabled (spec §8).
-                if (await _interaction.ShowAccessDeniedAsync(target.Name))
-                {
-                    _elevation.RestartElevated();
-                }
-
-                break;
-
-            default:
-                await _interaction.ShowFailedAsync(target.Name);
-                break;
+            SelectedProcess = null;
         }
     }
 }

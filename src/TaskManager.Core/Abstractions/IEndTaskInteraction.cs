@@ -1,9 +1,10 @@
-namespace TaskManager.App.ViewModels;
+namespace TaskManager.Core.Abstractions;
 
 /// <summary>
-/// The dialog side of the kill-process UX (spec §8), kept behind an interface so the view
-/// model can drive the flow while the actual Fluent <c>ContentDialog</c>s live in the view
-/// (they need a XamlRoot). Every End task confirms first; Access Denied offers elevation.
+/// The dialog side of the kill-process UX (spec §8). It sits in Core because it is the
+/// platform line: <see cref="Monitoring.EndTaskFlow"/> owns the §8 ordering here, while the
+/// actual Fluent <c>ContentDialog</c>s live in the WinUI head (they need a XamlRoot), which
+/// Core cannot reference. Every End task confirms first; Access Denied offers elevation.
 /// </summary>
 public interface IEndTaskInteraction
 {

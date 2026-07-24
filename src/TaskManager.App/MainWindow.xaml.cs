@@ -6,6 +6,8 @@ using Microsoft.UI.Xaml.Media;
 using TaskManager.App.Interop;
 using TaskManager.App.Monitoring;
 using TaskManager.App.ViewModels;
+using TaskManager.Core.Abstractions;
+using TaskManager.Core.Monitoring;
 using TaskManager.Core.Presentation;
 using TaskManager.Core.Product;
 
@@ -26,7 +28,8 @@ public sealed partial class MainWindow : Window, IEndTaskInteraction
         // Construct the view model before InitializeComponent so x:Bind and the initial
         // NavigationView selection (which fires SelectionChanged during load) see it.
         ViewModel = new MainViewModel(
-            new ProcessTerminator(), new ElevationService(), this, new ProcessIconResolver());
+            new EndTaskFlow(new ProcessTerminator(), new ElevationService(), this),
+            new ProcessIconResolver());
 
         InitializeComponent();
 
