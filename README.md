@@ -73,23 +73,34 @@ scroll survive the refresh).
 > Windows with the toolchain below. `TaskManager.Core` and its tests are plain `net8.0` and
 > build/run anywhere.
 
-Prerequisites:
+Prerequisites — just two:
 
 - Windows 10 22H2 / Windows 11 22H2 or later. (The Memory column uses
   `PROCESS_MEMORY_COUNTERS_EX2.PrivateWorkingSetSize`, which needs 22H2+.)
 - .NET 8 SDK.
-- The **Windows App SDK 1.8** / WinUI 3 workload (Visual Studio 2022 "Windows application
-  development", or the standalone Windows App SDK). The NuGet packages restore from
-  nuget.org via the repo-level `nuget.config`.
+
+No Visual Studio, no Windows SDK install, and no `dotnet workload` are required. Everything
+the WinUI 3 build needs restores from nuget.org via the repo-level `nuget.config`: the XAML
+markup compiler and its MSBuild targets come from `Microsoft.WindowsAppSDK`, the SDK tooling
+from `Microsoft.Windows.SDK.BuildTools`, the `net8.0-windows10.0.22621.0` targeting pack is
+auto-resolved as `Microsoft.Windows.SDK.NET.Ref`, and CsWin32 is a source generator — so the
+P/Invoke layer needs no SDK headers either.
 
 ```powershell
 # Run the pure-logic tests (any OS with the .NET 8 SDK):
 dotnet test tests/TaskManager.Core.Tests
 
 # Build and run the app (Windows):
-dotnet build src/TaskManager.App -c Debug
-dotnet run  --project src/TaskManager.App -c Debug
+dotnet build TaskManager.sln -c Debug
+dotnet run  --project src/TaskManager.App -c Debug -p:Platform=x64
 ```
+
+**Build the solution, or pass an explicit `-p:Platform=x64`** (or `arm64`). Pointing `dotnet
+build` straight at `src/TaskManager.App` defaults to AnyCPU, which CsWin32 refuses for
+`GetWindowLongPtr` (`warning PInvoke005`); the assembly then fails to compile, and the XAML
+pass can no longer resolve the project's own types, so the real error is buried under a pile
+of `WMC0001`/`WMC9999`. `TaskManager.sln` defines only `x64`/`arm64` and maps the app to
+`Debug|x64`, so the solution-level build needs no flag.
 
 The app runs **un-elevated** by default (spec §4). Ending another user's or a service's
 process surfaces a **Restart as administrator** dialog rather than requesting admin up

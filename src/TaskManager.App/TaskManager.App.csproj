@@ -8,8 +8,10 @@
     22H2 SDK because PROCESS_MEMORY_COUNTERS_EX2.PrivateWorkingSetSize — the
     Memory column source (spec §4) — needs Win10/11 22H2+.
 
-    NOTE: This project only builds on Windows with the Windows App SDK / WinUI
-    workload installed. It cannot be compiled on Linux/CI without that toolchain.
+    NOTE: Windows-only — this cannot be compiled on Linux/CI. It does NOT need a
+    Visual Studio or Windows App SDK workload, though: the XAML compiler and SDK
+    tooling arrive via the PackageReferences below. Build it as x64/arm64 (the .sln
+    maps that) — AnyCPU breaks CsWin32's GetWindowLongPtr and then the XAML pass.
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
