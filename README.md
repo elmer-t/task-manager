@@ -28,20 +28,23 @@ the only mutating action. Everything else is read-only.
 TaskManager.sln
 ├─ src/TaskManager.Core        net8.0 class library — platform-neutral, framework-free
 │  ├─ Models/                  ProcessSample, ServiceSample, SystemSample, MonitorSnapshot, enums
-│  ├─ Monitoring/              ClassificationRule (§7), CpuMath, RollingWindow, constants
+│  ├─ Monitoring/              ClassificationRule (§7), EndTaskFlow (§8), CpuMath,
+│  │                           SystemCpuInterval, RollingWindow, constants
 │  ├─ Presentation/            ViewDescriptor (the per-view table), usage-heat thresholds
 │  ├─ Collections/             CollectionSync — reconcile a bound list by key, in place
 │  ├─ Text/Humanize.cs         "842 MB" / "1.8 GB" / "12.4%" formatting
 │  └─ Abstractions/            IProcessSource, IServiceSource, ISystemMetricsSource,
-│                              IProcessTerminator, IElevationService
+│                              IProcessTerminator, IElevationService, IEndTaskInteraction
 ├─ src/TaskManager.App         net8.0-windows WinUI 3 head
 │  ├─ Interop/                 CsWin32-backed implementations of the Core contracts
 │  ├─ Monitoring/              MonitorEngine (the single 1 Hz loop)
-│  ├─ ViewModels/              MainViewModel, row/graph VMs, End task flow
+│  ├─ ViewModels/              MainViewModel, row/graph VMs
 │  ├─ Converters/              heat / visibility / pill brushes
+│  ├─ Dialogs/                 About overlay + the End task dialog adapter (§8)
 │  ├─ NativeMethods.txt        the CsWin32 binding surface (spec §4 / §9)
+│  ├─ Composition.cs           the object graph: adapters, End task flow, VM, engine
 │  ├─ App.xaml(.cs)            shared resources + entry point
-│  └─ MainWindow.xaml(.cs)     NavigationView + MicaBackdrop shell, composition root
+│  └─ MainWindow.xaml(.cs)     NavigationView + MicaBackdrop shell
 └─ tests/TaskManager.Core.Tests   xUnit tests for the pure logic
 ```
 

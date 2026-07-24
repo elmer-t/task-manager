@@ -28,6 +28,20 @@ public class AboutInfoTests
     }
 
     [Fact]
+    public void The_fixed_values_are_readable_off_an_instance()
+    {
+        // The dialog's markup binds one AboutInfo, so every line it shows must be reachable
+        // as an instance member — including the repository as a Uri the link binds directly.
+        var about = new AboutInfo(new Version(1, 0, 0, 0), "© 2026 REDHEADIT");
+
+        Assert.Equal(AboutInfo.Name, about.ProductName);
+        Assert.Equal(AboutInfo.Tagline, about.TaglineText);
+        Assert.Equal(AboutInfo.License, about.LicenseName);
+        Assert.Equal(AboutInfo.RepositoryUrl, about.RepositoryUrlText);
+        Assert.Equal(new Uri(AboutInfo.RepositoryUrl), about.RepositoryUri);
+    }
+
+    [Fact]
     public void Version_text_drops_the_revision_component()
     {
         // Assembly versions carry a 4th (revision) field; the dialog shows only three.
