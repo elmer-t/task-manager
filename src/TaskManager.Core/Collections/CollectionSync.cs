@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace TaskManager.App.ViewModels;
+namespace TaskManager.Core.Collections;
 
 /// <summary>
 /// Reconciles a bound <see cref="ObservableCollection{T}"/> against the latest tick's
@@ -8,7 +8,7 @@ namespace TaskManager.App.ViewModels;
 /// changed. This is what lets a 1 Hz refresh keep the user's selection and scroll position
 /// instead of clearing and rebuilding the list every second.
 /// </summary>
-internal static class CollectionSync
+public static class CollectionSync
 {
     public static void Apply<TSample, TRow, TKey>(
         ObservableCollection<TRow> target,

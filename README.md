@@ -26,30 +26,41 @@ the only mutating action. Everything else is read-only.
 
 ```
 TaskManager.sln
-├─ src/TaskManager.Core        net8.0 class library — platform-neutral, UI-free
-│  ├─ Models/                  ProcessSample, ServiceSample, SystemSample, enums
-│  ├─ Monitoring/              ClassificationRule (§7), CpuMath, RollingWindow, constants
+├─ src/TaskManager.Core        net8.0 class library — platform-neutral, framework-free
+│  ├─ Models/                  ProcessSample, ServiceSample, SystemSample, MonitorSnapshot, enums
+│  ├─ Monitoring/              ClassificationRule (§7), EndTaskFlow (§8), CpuMath,
+│  │                           SystemCpuInterval, RollingWindow, constants
+│  ├─ Presentation/            ViewDescriptor (the per-view table), usage-heat thresholds
+│  ├─ Collections/             CollectionSync — reconcile a bound list by key, in place
 │  ├─ Text/Humanize.cs         "842 MB" / "1.8 GB" / "12.4%" formatting
 │  └─ Abstractions/            IProcessSource, IServiceSource, ISystemMetricsSource,
-│                              IProcessTerminator, IElevationService
+│                              IProcessTerminator, IElevationService, IEndTaskInteraction
 ├─ src/TaskManager.App         net8.0-windows WinUI 3 head
 │  ├─ Interop/                 CsWin32-backed implementations of the Core contracts
-│  ├─ Monitoring/              MonitorEngine (the single 1 Hz loop) + MonitorSnapshot
-│  ├─ ViewModels/              MainViewModel, row/graph VMs, End task flow
+│  ├─ Monitoring/              MonitorEngine (the single 1 Hz loop)
+│  ├─ ViewModels/              MainViewModel, row/graph VMs
 │  ├─ Converters/              heat / visibility / pill brushes
+│  ├─ Dialogs/                 About overlay + the End task dialog adapter (§8)
 │  ├─ NativeMethods.txt        the CsWin32 binding surface (spec §4 / §9)
+│  ├─ Composition.cs           the object graph: adapters, End task flow, VM, engine
 │  ├─ App.xaml(.cs)            shared resources + entry point
-│  └─ MainWindow.xaml(.cs)     NavigationView + MicaBackdrop shell, composition root
+│  └─ MainWindow.xaml(.cs)     NavigationView + MicaBackdrop shell
 └─ tests/TaskManager.Core.Tests   xUnit tests for the pure logic
 ```
 
 ### Why the split
 
-All Win32 access sits behind the interfaces in `TaskManager.Core.Abstractions`, and the
-decisions that carry the spec — the App/Background rule (§7), the CPU delta math, the
-rolling 60 s window (§5), number formatting — live in `TaskManager.Core` as pure functions.
-That keeps the spec-critical logic testable on any host (see `tests/`), while the
-platform-bound interop, view models, and XAML stay in the WinUI head.
+`TaskManager.Core` holds what is framework-free and worth pinning with tests — including
+presentation *facts*: the App/Background rule (§7), the CPU delta math, the rolling 60 s
+window (§5), number formatting, the usage-heat thresholds (§6), and the per-view table
+behind the rail. `TaskManager.App` holds what binds to WinUI, Win32, or the dispatcher.
+
+All Win32 access sits behind the interfaces in `TaskManager.Core.Abstractions`. Those
+contracts stay in Core not because anything varies across them, but because they *are* the
+platform line: they let Core's model types be the currency of a tick while the `PInvoke`
+code lives in a project Core cannot reference. That keeps the spec-critical logic testable
+on any host (see `tests/`), while the interop, the WinUI-bound view models, and the XAML
+stay in the WinUI head.
 
 The data flow is one direction per tick: `MonitorEngine` (a background 1 Hz loop) samples
 the three sources off the UI thread, then marshals a `MonitorSnapshot` to the UI thread,

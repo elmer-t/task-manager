@@ -1,4 +1,4 @@
-namespace TaskManager.App.ViewModels;
+namespace TaskManager.Core.Presentation;
 
 /// <summary>
 /// Three-step "usage-heat emphasis" for the numeric columns (spec §6). A converter maps
@@ -12,7 +12,7 @@ public enum UsageHeat
 }
 
 /// <summary>Thresholds for the heat buckets, kept in one place so both columns agree.</summary>
-internal static class Heat
+public static class Heat
 {
     private const ulong MegaByte = 1024UL * 1024UL;
 

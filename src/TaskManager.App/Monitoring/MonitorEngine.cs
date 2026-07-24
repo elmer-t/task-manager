@@ -1,5 +1,6 @@
 using Microsoft.UI.Dispatching;
 using TaskManager.Core.Abstractions;
+using TaskManager.Core.Models;
 using TaskManager.Core.Monitoring;
 
 namespace TaskManager.App.Monitoring;
@@ -10,7 +11,9 @@ namespace TaskManager.App.Monitoring;
 /// UI; each finished <see cref="MonitorSnapshot"/> is marshaled back to the UI thread via
 /// the <see cref="DispatcherQueue"/> to update the view models. The three sources are
 /// stateful (they hold previous-tick counters), so they are only ever touched from this
-/// one loop thread.
+/// one loop thread; the process source additionally depends on the system source's reading
+/// for its <b>CPU denominator</b>, which is why the two are wired together below rather
+/// than merely ordered.
 /// </summary>
 internal sealed class MonitorEngine : IAsyncDisposable
 {
@@ -76,9 +79,8 @@ internal sealed class MonitorEngine : IAsyncDisposable
     {
         try
         {
-            // System first so the process source's CPU denominator lines up with the graph.
             var system = _systemMetrics.Sample();
-            var processes = _processes.Sample();
+            var processes = _processes.Sample(system.CpuDenominator);
             var services = _services.Sample();
             return new MonitorSnapshot(system, processes, services);
         }

@@ -22,28 +22,23 @@ public static class ClassificationRule
         !window.IsCloaked;
 
     /// <summary>
-    /// Classifies a process from the windows it owns. <see cref="ProcessKind.App"/> if
-    /// any one window qualifies (the "at least one" test naturally dedupes a
-    /// multi-window process to a single App row); otherwise
-    /// <see cref="ProcessKind.Background"/> — including a process that owns no windows.
+    /// Aggregates one <b>Tick</b>'s qualifying windows into a verdict for every process:
+    /// a PID that owns at least one is an <see cref="ProcessKind.App"/>, everything else is
+    /// a <see cref="ProcessKind.Background"/> process.
     /// </summary>
-    /// <remarks>
-    /// The production hot path inlines <see cref="IsQualifyingWindow"/> per window in
-    /// <c>WindowClassifier</c> rather than calling this, so this method is exercised only by
-    /// tests. It is retained deliberately as the pure, platform-neutral statement of the §7
-    /// "at least one qualifying window" aggregation rule — the piece that can't be unit-tested
-    /// through the Win32-bound classifier.
-    /// </remarks>
-    public static ProcessKind Classify(IEnumerable<WindowAttributes> ownedWindows)
+    /// <param name="qualifyingWindowOwners">
+    /// The owning PID of every window that already passed <see cref="IsQualifyingWindow"/> —
+    /// the caller reading Win32 pre-filters, so nothing here re-tests the four attributes.
+    /// A multi-window process appears once per window; the set collapses it to one App.
+    /// </param>
+    public static ProcessClassification Classify(IEnumerable<uint> qualifyingWindowOwners)
     {
-        foreach (var window in ownedWindows)
+        var appProcessIds = new HashSet<uint>();
+        foreach (uint processId in qualifyingWindowOwners)
         {
-            if (IsQualifyingWindow(window))
-            {
-                return ProcessKind.App;
-            }
+            appProcessIds.Add(processId);
         }
 
-        return ProcessKind.Background;
+        return new ProcessClassification(appProcessIds);
     }
 }

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="TaskManager.App.Dialogs.AboutDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="About"
+    CloseButtonText="Close"
+    DefaultButton="Close">
+
+    <!--
+        About (issue #18): a purely presentational overlay, authored in markup so it is
+        editable under XAML Hot Reload like the rest of the shell (ADR-0001 / spec §3).
+        Everything shown comes from the single AboutInfo the code-behind builds; the version
+        and copyright lines are read from the running assembly, never baked in here.
+    -->
+    <StackPanel Spacing="4" Width="320">
+        <TextBlock
+            Text="{x:Bind Info.ProductName}"
+            Style="{StaticResource SubtitleTextBlockStyle}" />
+        <TextBlock Text="{x:Bind Info.VersionText}" />
+        <TextBlock
+            Text="{x:Bind Info.TaglineText}"
+            TextWrapping="Wrap"
+            Margin="0,8,0,0" />
+        <TextBlock
+            Text="{x:Bind Info.CopyrightLine}"
+            Style="{StaticResource CaptionTextBlockStyle}"
+            Margin="0,8,0,0" />
+        <HyperlinkButton
+            Content="{x:Bind Info.RepositoryUrlText}"
+            NavigateUri="{x:Bind Info.RepositoryUri}"
+            Padding="0" />
+    </StackPanel>
+
+</ContentDialog>
