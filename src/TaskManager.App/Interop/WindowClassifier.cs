@@ -17,7 +17,11 @@ internal sealed class WindowClassifier
 {
     private const uint WsExToolWindow = 0x00000080; // WS_EX_TOOLWINDOW
 
-    // Reused across ticks to avoid per-tick allocation churn on the hot path (spec §5).
+    // This tick's qualifying-window owners, buffered for ClassificationRule because
+    // EnumWindows is callback-driven and cannot be consumed lazily. Reused across ticks for
+    // continuity rather than because it is load-bearing: the process sampler allocates a
+    // list, a set and a record per process every tick, and spec §5's budget is about
+    // syscalls, not GC pressure.
     private readonly List<uint> _qualifyingWindowOwners = new();
 
     /// <summary>
