@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
-using TaskManager.App.ViewModels;
+using TaskManager.Core.Presentation;
 
 namespace TaskManager.App.Converters;
 

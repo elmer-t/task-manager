@@ -1,5 +1,6 @@
 using Microsoft.UI.Dispatching;
 using TaskManager.Core.Abstractions;
+using TaskManager.Core.Models;
 using TaskManager.Core.Monitoring;
 
 namespace TaskManager.App.Monitoring;

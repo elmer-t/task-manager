@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Media;
 using TaskManager.Core.Models;
+using TaskManager.Core.Presentation;
 using TaskManager.Core.Text;
 
 namespace TaskManager.App.ViewModels;

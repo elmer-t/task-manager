@@ -1,9 +1,10 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using TaskManager.App.Monitoring;
 using TaskManager.Core.Abstractions;
+using TaskManager.Core.Collections;
 using TaskManager.Core.Models;
+using TaskManager.Core.Presentation;
 
 namespace TaskManager.App.ViewModels;
 

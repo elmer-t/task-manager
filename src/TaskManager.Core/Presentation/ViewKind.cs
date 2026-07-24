@@ -1,4 +1,4 @@
-namespace TaskManager.App.ViewModels;
+namespace TaskManager.Core.Presentation;
 
 /// <summary>The three views selected by the left navigation rail (spec §6 / CONTEXT.md).</summary>
 public enum ViewKind
@@ -12,10 +12,11 @@ public enum ViewKind
 /// The per-view presentation facts shared by every place that would otherwise switch on
 /// <see cref="ViewKind"/> — the toolbar header, and whether the view is a process list
 /// (End task applies) or the view-only Services list. Consolidating them here replaces the
-/// parallel conditionals that were scattered across <see cref="MainViewModel"/>.
+/// parallel conditionals that were previously scattered across the window's view model.
 /// </summary>
 /// <param name="Kind">The view this describes.</param>
-/// <param name="Tag">The <c>NavigationViewItem.Tag</c> that selects this view in the rail.</param>
+/// <param name="Tag">The rail's string tag for this view — what the navigation item carries
+/// so a selection can be resolved back to a <see cref="ViewKind"/>.</param>
 /// <param name="Header">The title shown in the toolbar (spec §6).</param>
 /// <param name="IsProcessView">
 /// True for the Apps / Background process lists; false for the view-only Services list.
@@ -34,8 +35,8 @@ public sealed record ViewDescriptor(ViewKind Kind, string Tag, string Header, bo
     public static ViewDescriptor For(ViewKind kind) => ByKind[kind];
 
     /// <summary>
-    /// Resolves a <c>NavigationViewItem.Tag</c> back to its view — the one place the rail's
-    /// tags are mapped, so the nav-selection handler shares this table too. Returns
+    /// Resolves a rail tag back to its view — the one place the rail's tags are mapped, so
+    /// the nav-selection handler shares this table too. Returns
     /// <see langword="false"/> for an unknown tag.
     /// </summary>
     public static bool TryFromTag(string tag, out ViewKind kind)

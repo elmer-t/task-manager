@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Media;
 using TaskManager.App.Interop;
 using TaskManager.App.Monitoring;
 using TaskManager.App.ViewModels;
+using TaskManager.Core.Presentation;
 using TaskManager.Core.Product;
 
 namespace TaskManager.App;

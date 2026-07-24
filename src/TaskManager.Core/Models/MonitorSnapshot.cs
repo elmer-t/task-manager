@@ -1,6 +1,4 @@
-using TaskManager.Core.Models;
-
-namespace TaskManager.App.Monitoring;
+namespace TaskManager.Core.Models;
 
 /// <summary>
 /// Everything one <b>tick</b> produced (spec §5): the system reading behind the graph
